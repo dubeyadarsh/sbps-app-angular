@@ -1,0 +1,140 @@
+<div class="dashboard-container">
+  
+  <div class="stats-grid">
+    <div class="pro-card stat-card" *ngFor="let stat of statCards">
+      
+      <div class="stat-header">
+        <div class="icon-wrapper" [style.backgroundColor]="stat.iconBgColor" [style.color]="stat.iconColor">
+          <span class="material-icons-round">{{ stat.icon }}</span>
+        </div>
+      </div>
+
+      <div class="stat-body">
+        <span class="stat-title">{{ stat.title }}</span>
+        <h2 class="stat-value">{{ stat.value }}</h2>
+      </div>
+      
+    </div>
+  </div>
+
+  <div class="dashboard-main-grid">
+    
+    <div class="charts-column">
+      
+      <div class="pro-card chart-card">
+        <div class="chart-header">
+          <div class="header-titles">
+            <h2>Fee Collection Trend</h2>
+            <p>Monthly revenue generated over the last 6 months</p>
+          </div>
+        </div>
+        <div class="canvas-container">
+          <canvas baseChart
+            [data]="lineChartData"
+            [options]="lineChartOptions"
+            [type]="'line'">
+          </canvas>
+        </div>
+      </div>
+
+      <div class="pro-card chart-card">
+        <div class="chart-header">
+          <div class="header-titles">
+            <h2>Student Distribution</h2>
+            <p>Number of active students enrolled per grade</p>
+          </div>
+        </div>
+        <div class="canvas-container">
+          <canvas baseChart
+            [data]="barChartData"
+            [options]="barChartOptions"
+            [type]="'bar'">
+          </canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="pro-card activities-card" style="padding: 24px; display: flex; flex-direction: column;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin: 0; font-size: 16px; color: var(--text-main);">Upcoming Events</h3>
+        
+        <button  (click)="openEventModal()" 
+                style="background: none; border: none; color: var(--primary-color); cursor: pointer; display: flex; align-items: center; gap: 4px; font-weight: 600;">
+          <span class="material-icons-round" style="font-size: 18px;">add_circle</span> Add
+        </button>
+      </div>
+      
+      <div *ngIf="upcomingEvents.length === 0" style="text-align: center; padding: 40px 0; color: var(--text-muted);">
+        <span class="material-icons-round" style="font-size: 40px; opacity: 0.3;">event_busy</span>
+        <p style="margin-top: 8px; font-size: 13px;">No upcoming events scheduled.</p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 16px; overflow-y: auto; max-height: 550px; padding-right: 8px;">
+        
+        <div *ngFor="let event of upcomingEvents" style="display: flex; gap: 12px; align-items: center;">
+          
+          <div style="background: #eff6ff; color: #3b82f6; border-radius: 8px; padding: 10px; text-align: center; min-width: 55px; border: 1px solid #bfdbfe;">
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase;">{{ event.eventDate | date:'MMM' }}</div>
+            <div style="font-size: 18px; font-weight: 800; line-height: 1;">{{ event.eventDate | date:'dd' }}</div>
+          </div>
+          
+          <div>
+            <div style="font-weight: 600; font-size: 14px; color: var(--text-main);">{{ event.title }}</div>
+            <div style="font-size: 12px; color: var(--text-muted);">{{ event.description }}</div>
+            <div style="font-size: 10px; color: #10b981; font-weight: 600; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px;" *ngIf="event.targetAudience">
+              Target: {{ event.targetAudience }}
+            </div>
+          </div>
+          
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="showEventModal">
+  <div class="modal-content">
+    
+    <div class="modal-header">
+      <h3>Add New Event</h3>
+      <button class="icon-btn-small" (click)="closeEventModal()" style="background: none; border: none; cursor: pointer; color: var(--text-muted);">
+        <span class="material-icons-round">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Event Title <span style="color: #ef4444;">*</span></label>
+        <input type="text" class="custom-input" [(ngModel)]="newEvent.title" placeholder="e.g. Science Fair 2026">
+      </div>
+      
+      <div class="form-group">
+        <label>Event Date <span style="color: #ef4444;">*</span></label>
+        <input type="date" class="custom-input" [(ngModel)]="newEvent.eventDate">
+      </div>
+
+      <div class="form-group">
+        <label>Target Audience</label>
+        <input type="text" class="custom-input" [(ngModel)]="newEvent.targetAudience" placeholder="e.g. All Grades, Parents Only">
+      </div>
+
+      <div class="form-group">
+        <label>Short Description</label>
+        <textarea class="custom-input" [(ngModel)]="newEvent.description" rows="3" placeholder="Brief details about the event..."></textarea>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeEventModal()">Cancel</button>
+      <button class="btn-primary" (click)="saveEvent()" [disabled]="isSubmittingEvent">
+        <span *ngIf="!isSubmittingEvent">Save Event</span>
+        <span *ngIf="isSubmittingEvent">Saving...</span>
+      </button>
+    </div>
+    
+  </div>
+</div>

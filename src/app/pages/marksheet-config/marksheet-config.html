@@ -1,0 +1,270 @@
+<div class="page-container">
+
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;">
+    <div>
+      <h1 class="page-title">Marksheet Configuration</h1>
+      <p class="page-subtitle">Manage subjects and configure grade-wise exam structure.</p>
+    </div>
+    <div class="status-tabs" style="margin-top:4px;">
+      <button [class.active]="activeSection === 'subjects'" (click)="activeSection = 'subjects'">Subject Master</button>
+      <button [class.active]="activeSection === 'config'" (click)="activeSection = 'config'">Grade Config</button>
+      <button [class.active]="activeSection === 'exams'" (click)="activeSection = 'exams'">Exams</button>
+    </div>
+  </div>
+
+  <!-- ========== SUBJECT MASTER ========== -->
+  <ng-container *ngIf="activeSection === 'subjects'">
+    <div class="pro-card" style="padding:24px;margin-bottom:20px;">
+      <h3 style="margin-top:0;">Add New Subject</h3>
+      <div class="form-row" style="align-items:flex-end;gap:16px;">
+        <div class="form-group" style="flex:2;">
+          <label>Subject Name</label>
+          <input class="form-control" [(ngModel)]="newSubject.name" placeholder="e.g. Physics, English Core">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>Code (optional)</label>
+          <input class="form-control" [(ngModel)]="newSubject.code" placeholder="e.g. PHY">
+        </div>
+        <div class="form-group">
+          <button class="btn-primary" (click)="saveSubject()" [disabled]="!newSubject.name.trim()">
+            <span class="material-icons-round">add</span> Add Subject
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pro-card">
+      <div class="table-responsive">
+        <table class="pro-table">
+          <thead><tr><th>Subject Name</th><th>Code</th><th class="text-right">Actions</th></tr></thead>
+          <tbody>
+            <tr *ngIf="subjects.length === 0">
+              <td colspan="3" class="empty-state">
+                <span class="material-icons-round empty-icon">menu_book</span>
+                <p>No subjects added yet.</p>
+              </td>
+            </tr>
+            <tr *ngFor="let s of subjects">
+              <td>
+                <span *ngIf="editingSubjectId !== s.id">{{ s.name }}</span>
+                <input *ngIf="editingSubjectId === s.id" class="form-control" [(ngModel)]="editSubjectName" style="padding:6px 10px;">
+              </td>
+              <td>
+                <span *ngIf="editingSubjectId !== s.id" class="badge" style="background:#f1f5f9;color:#475569;">{{ s.code || '—' }}</span>
+                <input *ngIf="editingSubjectId === s.id" class="form-control" [(ngModel)]="editSubjectCode" style="padding:6px 10px;width:80px;">
+              </td>
+              <td class="text-right" style="display:flex;justify-content:flex-end;gap:6px;">
+                <ng-container *ngIf="editingSubjectId !== s.id">
+                  <button class="icon-btn-small" (click)="startEditSubject(s)" title="Edit">
+                    <span class="material-icons-round">edit</span>
+                  </button>
+                  <button class="icon-btn-small delete" (click)="deleteSubject(s.id)" title="Delete">
+                    <span class="material-icons-round">delete</span>
+                  </button>
+                </ng-container>
+                <ng-container *ngIf="editingSubjectId === s.id">
+                  <button class="icon-btn-small" style="color:#16a34a;" (click)="saveEditSubject(s.id)" title="Save">
+                    <span class="material-icons-round">check</span>
+                  </button>
+                  <button class="icon-btn-small" (click)="editingSubjectId = null" title="Cancel">
+                    <span class="material-icons-round">close</span>
+                  </button>
+                </ng-container>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ========== GRADE CONFIG ========== -->
+  <ng-container *ngIf="activeSection === 'config'">
+
+    <div class="pro-card" style="padding:24px;margin-bottom:20px;">
+      <h3 style="margin-top:0;margin-bottom:16px;">Map Subject to Grade</h3>
+      <div class="form-row" style="gap:12px;flex-wrap:wrap;align-items:flex-end;">
+
+        <div class="form-group" style="min-width:120px;">
+          <label>Grade</label>
+          <select class="form-control" [(ngModel)]="newConfig.standard" (change)="onGradeChange()">
+            <option value="">Select...</option>
+            <option *ngFor="let g of availableGrades" [value]="g.value">{{ g.label }}</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="min-width:180px;flex:2;">
+          <label>Subject</label>
+          <select class="form-control" [(ngModel)]="newConfig.subjectId">
+            <option value="">Select subject...</option>
+            <option *ngFor="let s of subjects" [value]="s.id">{{ s.name }}</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="min-width:110px;">
+          <label>Theory Max</label>
+          <input type="number" class="form-control" [(ngModel)]="newConfig.theoryMaxMarks" min="1">
+        </div>
+
+        <div class="form-group" style="min-width:100px;">
+          <label>Theory Pass</label>
+          <input type="number" class="form-control" [(ngModel)]="newConfig.theoryPassMarks" min="1">
+        </div>
+
+        <div class="form-group" style="display:flex;align-items:center;gap:8px;padding-bottom:2px;">
+          <input type="checkbox" id="hasPrac" [(ngModel)]="newConfig.hasPractical" style="width:16px;height:16px;">
+          <label for="hasPrac" style="margin:0;cursor:pointer;white-space:nowrap;">Has Practical</label>
+        </div>
+
+        <ng-container *ngIf="newConfig.hasPractical">
+          <div class="form-group" style="min-width:110px;">
+            <label>Practical Max</label>
+            <input type="number" class="form-control" [(ngModel)]="newConfig.practicalMaxMarks" min="1">
+          </div>
+          <div class="form-group" style="min-width:100px;">
+            <label>Practical Pass</label>
+            <input type="number" class="form-control" [(ngModel)]="newConfig.practicalPassMarks" min="1">
+          </div>
+        </ng-container>
+
+        <div class="form-group" style="display:flex;align-items:center;gap:8px;padding-bottom:2px;">
+          <input type="checkbox" id="isMand" [(ngModel)]="newConfig.isCompulsory" style="width:16px;height:16px;">
+          <label for="isMand" style="margin:0;cursor:pointer;">Compulsory</label>
+        </div>
+
+        <div class="form-group" style="min-width:80px;">
+          <label>Order</label>
+          <input type="number" class="form-control" [(ngModel)]="newConfig.displayOrder" min="0">
+        </div>
+
+        <div class="form-group">
+          <button class="btn-primary" (click)="saveConfig()"
+                  [disabled]="!newConfig.standard || !newConfig.subjectId || !newConfig.theoryMaxMarks">
+            <span class="material-icons-round">add_circle</span> Add
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pro-card" *ngIf="newConfig.standard">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;">
+        <strong>Grade {{ newConfig.standard }} — Configured Subjects</strong>
+        <span class="badge" style="background:#e0f2fe;color:#0369a1;">{{ gradeConfigs.length }} subjects</span>
+      </div>
+      <div class="table-responsive">
+        <table class="pro-table">
+          <thead>
+            <tr>
+              <th>Order</th><th>Subject</th><th>Theory Max / Pass</th>
+              <th>Practical Max / Pass</th><th>Type</th><th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="gradeConfigs.length === 0">
+              <td colspan="6" class="empty-state">
+                <span class="material-icons-round empty-icon">library_books</span>
+                <p>No subjects configured for this grade yet.</p>
+              </td>
+            </tr>
+            <tr *ngFor="let c of gradeConfigs">
+              <td style="color:var(--text-muted);">{{ c.displayOrder }}</td>
+              <td><strong>{{ c.subjectName }}</strong> <small style="color:var(--text-muted);">{{ c.subjectCode }}</small></td>
+              <td>{{ c.theoryMaxMarks }} / {{ c.theoryPassMarks }}</td>
+              <td>
+                <span *ngIf="c.hasPractical">{{ c.practicalMaxMarks }} / {{ c.practicalPassMarks }}</span>
+                <span *ngIf="!c.hasPractical" style="color:var(--text-muted);">—</span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="c.isCompulsory ? 'paid' : 'pending'">
+                  {{ c.isCompulsory ? 'Compulsory' : 'Optional' }}
+                </span>
+              </td>
+              <td class="text-right">
+                <button class="icon-btn-small delete" (click)="deleteConfig(c.id)">
+                  <span class="material-icons-round">delete</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ========== EXAMS ========== -->
+  <ng-container *ngIf="activeSection === 'exams'">
+
+    <!-- Exam naming tip -->
+    <div style="padding:12px 16px;background:#fef9c3;border:1px solid #fde047;border-radius:8px;margin-bottom:16px;font-size:13px;color:#854d0e;display:flex;align-items:center;gap:8px;">
+      <span class="material-icons-round" style="font-size:16px;">info</span>
+      <span>Include the word <strong>"Annual"</strong> in the exam name to enable consolidated annual marksheets (e.g. "Annual Examination 2025").</span>
+    </div>
+
+    <div class="pro-card" style="padding:24px;margin-bottom:20px;">
+      <h3 style="margin-top:0;">Create Exam</h3>
+      <div class="form-row" style="gap:12px;align-items:flex-end;">
+        <div class="form-group" style="flex:2;">
+          <label>Exam Name</label>
+          <input class="form-control" [(ngModel)]="newExam.name" placeholder="e.g. Unit Test 1, Half Yearly, Annual Examination 2025">
+        </div>
+        <div class="form-group" style="min-width:130px;">
+          <label>Grade</label>
+          <select class="form-control" [(ngModel)]="newExam.standard" (change)="loadExams()">
+            <option value="">Select...</option>
+            <option *ngFor="let g of availableGrades" [value]="g.value">{{ g.label }}</option>
+          </select>
+        </div>
+        <div class="form-group" style="min-width:120px;">
+          <label>Academic Year</label>
+          <input class="form-control" [(ngModel)]="newExam.academicYear" placeholder="2024-25">
+        </div>
+        <div class="form-group" style="min-width:150px;">
+          <label>Exam Date</label>
+          <input type="date" class="form-control" [(ngModel)]="newExam.examDate">
+        </div>
+        <div class="form-group">
+          <button class="btn-primary" (click)="saveExam()"
+                  [disabled]="!newExam.name || !newExam.standard || !newExam.academicYear">
+            <span class="material-icons-round">add</span> Create
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pro-card" *ngIf="newExam.standard">
+      <div class="table-responsive">
+        <table class="pro-table">
+          <thead>
+            <tr><th>Exam Name</th><th>Grade</th><th>Year</th><th>Date</th><th>Type</th><th class="text-right">Actions</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="exams.length === 0">
+              <td colspan="6" class="empty-state">
+                <span class="material-icons-round empty-icon">event_note</span>
+                <p>No exams created for this grade.</p>
+              </td>
+            </tr>
+            <tr *ngFor="let e of exams">
+              <td><strong>{{ e.name }}</strong></td>
+              <td>Grade {{ e.standard }}</td>
+              <td>{{ e.academicYear }}</td>
+              <td>{{ e.examDate ? (e.examDate | date:'MMM dd, yyyy') : '—' }}</td>
+              <td>
+                <span class="badge" [style.background]="e.name.toLowerCase().includes('annual') ? '#fef9c3' : '#f1f5f9'"
+                      [style.color]="e.name.toLowerCase().includes('annual') ? '#854d0e' : '#475569'">
+                  {{ e.name.toLowerCase().includes('annual') ? 'Annual' : 'Term' }}
+                </span>
+              </td>
+              <td class="text-right">
+                <button class="icon-btn-small delete" (click)="deleteExam(e.id)">
+                  <span class="material-icons-round">delete</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+
+</div>

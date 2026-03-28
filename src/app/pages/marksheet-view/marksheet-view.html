@@ -1,0 +1,143 @@
+<div class="page-container">
+
+  <div class="page-header" style="margin-bottom:24px;">
+    <h1 class="page-title">Marksheet Generator</h1>
+  </div>
+
+  <div class="selector-card">
+    <div class="selector-row">
+      
+      <div class="field-group">
+        <label class="field-label">Grade</label>
+        <select class="field-select" [(ngModel)]="selectedGrade" (ngModelChange)="onGradeChange()">
+          <option value="">Select Grade...</option>
+          <option *ngFor="let grade of availableGrades" [value]="grade.value">
+            {{ grade.label }}
+          </option>
+        </select>
+      </div>
+      
+      <div class="field-group" *ngIf="exams.length > 0">
+        <label class="field-label">Exam</label>
+        <select class="field-select" [(ngModel)]="selectedExamId" (change)="onExamChange()">
+          <option value="">Select Exam...</option>
+          <option *ngFor="let e of exams" [value]="e.id">{{ e.name }} ({{ e.academicYear }})</option>
+        </select>
+      </div>
+
+      <div class="field-group" *ngIf="students.length > 0">
+        <label class="field-label">Student</label>
+        <select class="field-select" [(ngModel)]="selectedStudentId">
+          <option value="">Select Student...</option>
+          <option *ngFor="let s of students" [value]="s.id">
+            {{ s.name || s.fullName || s.studentName }} (SR: {{ s.srNumber || s.id }})
+          </option>
+        </select>
+      </div>
+
+      <button class="btn-primary" 
+              style="height: 42px; margin-bottom: 2px; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 20px;" 
+              (click)="loadMarksheet()" 
+              [disabled]="!selectedExamId || !selectedStudentId || isLoading">
+        <span class="material-icons-round spin" *ngIf="isLoading" style="font-size: 18px;">autorenew</span>
+        <span class="material-icons-round" *ngIf="!isLoading" style="font-size: 18px;">visibility</span>
+        <span>{{ isLoading ? 'Loading...' : 'View Report' }}</span>
+      </button>
+
+    </div>
+
+    <div style="margin-top: 24px;" *ngIf="availableTemplates && availableTemplates.length > 0">
+      <div class="tpl-section-label">Select Print Template</div>
+      <div class="template-picker">
+        <div class="tpl-card" *ngFor="let tm of availableTemplates"
+             [class.tpl-active]="selectedTemplate === tm.key"
+             (click)="selectedTemplate = tm.key">
+          <span class="material-icons-round tpl-icon">{{ tm.icon }}</span>
+          <div class="tpl-info">
+            <div class="tpl-name">{{ tm.label }}</div>
+            <div class="tpl-orient">
+              <span class="material-icons-round" style="font-size:14px;">
+                {{ tm.orientation === 'Portrait' ? 'portrait' : 'landscape' }}
+              </span>
+              {{ tm.orientation }}
+            </div>
+          </div>
+          <span class="material-icons-round tpl-check" *ngIf="selectedTemplate === tm.key">check_circle</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="loader-wrap" *ngIf="isLoading">
+    <span class="material-icons-round spin">autorenew</span>
+    <p>Generating marksheet data...</p>
+  </div>
+
+  <div class="empty-hint" *ngIf="!marksheet && !isLoading">
+    <span class="material-icons-round">history_edu</span>
+    <p>Select a grade, exam, and student to generate the marksheet.</p>
+  </div>
+
+  <div class="preview-card" *ngIf="marksheet && !isLoading">
+    
+    <div class="print-bar">
+      <div class="print-bar-left">
+        <strong>{{ marksheet.studentName }}</strong>
+        <span class="dot-sep">•</span>
+        <span>Grade {{ marksheet.standard }}</span>
+        <span class="dot-sep">•</span>
+        <span>SR: {{ marksheet.srNumber }}</span>
+      </div>
+      <button class="btn-print" (click)="printMarksheet()">
+        <span class="material-icons-round">print</span> Print Document
+      </button>
+    </div>
+
+    <div class="ms-header">
+      <div class="ms-school">MARKSHEET SUMMARY</div>
+      <div class="ms-exam-title">{{ marksheet.examName }}</div>
+      <div class="ms-year-text">Academic Year {{ marksheet.academicYear }}</div>
+      
+      <div *ngIf="marksheet.isAnnual && marksheet.includedExams?.length" 
+           style="margin-top: 8px; display: inline-block; background: #eef2ff; color: #4f46e5; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px;">
+        Consolidates: {{ marksheet.includedExams.join(' + ') }}
+      </div>
+    </div>
+
+    <div class="ms-summary-row">
+      
+      <div class="ms-sum-block">
+        <div class="ms-sum-label">Total Score</div>
+        <div class="ms-sum-value">
+          {{ marksheet.totalObtained }} <span style="font-size: 14px; color: var(--text-muted);">/ {{ marksheet.totalMaxMarks }}</span>
+        </div>
+      </div>
+
+      <div class="ms-sum-block">
+        <div class="ms-sum-label">Percentage</div>
+        <div class="ms-sum-value">{{ marksheet.percentage | number:'1.2-2' }}%</div>
+      </div>
+
+      <div class="ms-sum-block">
+        <div class="ms-sum-label">Class Rank</div>
+        <div class="ms-sum-value">#{{ marksheet.rank || '—' }}</div>
+      </div>
+
+      <div class="ms-sum-block">
+        <div class="ms-sum-label">Overall Grade</div>
+        <div class="ms-sum-value" style="color: #0369a1;">{{ marksheet.overallGrade }}</div>
+      </div>
+
+      <div class="ms-sum-block" [ngClass]="marksheet.result === 'PASS' ? 'result-pass' : (marksheet.result === 'N/A' ? '' : 'result-fail')">
+        <div class="ms-sum-label" [ngStyle]="{'color': marksheet.result === 'PASS' ? '#166534' : (marksheet.result === 'N/A' ? '#64748b' : '#991b1b')}">Final Result</div>
+        <div class="ms-sum-value" [ngStyle]="{'color': marksheet.result === 'PASS' ? '#15803d' : (marksheet.result === 'N/A' ? '#475569' : '#b91c1c')}">
+          {{ marksheet.result }}
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

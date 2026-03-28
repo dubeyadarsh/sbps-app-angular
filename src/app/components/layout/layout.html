@@ -1,0 +1,134 @@
+<div class="app-layout">
+  
+  <div class="mobile-backdrop" 
+       [class.active]="isMobileSidebarOpen" 
+       (click)="closeMobileSidebar()">
+  </div>
+
+  <aside class="sidebar" [class.collapsed]="!isSidebarOpen" [class.mobile-open]="isMobileSidebarOpen">
+    
+    <div class="logo-area" (click)="toggleSidebar()" title="Toggle Sidebar">
+      <div class="logo-icon-box">
+        <span class="material-icons-round">school</span>
+      </div>
+      <div class="logo-text-wrapper">
+        <h2 class="logo-text">SB<span class="text-primary">PS</span></h2>
+        <span class="logo-subtext">Administration Pro</span>
+      </div>
+    </div>
+
+    <nav class="nav-links">
+      <a routerLink="/dashboard" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <span class="material-icons-round">dashboard</span> 
+        <span class="nav-text">Dashboard</span>
+      </a>
+      
+      <a routerLink="/students" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <span class="material-icons-round">people</span> 
+        <span class="nav-text">Students</span>
+      </a>
+      
+      <a routerLink="/fees" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <span class="material-icons-round">payments</span> 
+        <span class="nav-text">Fee Management</span>
+      </a>
+        
+      <div class="nav-group">
+        <div class="nav-item parent-item" 
+             style="cursor: pointer;" 
+             (click)="toggleMarksheetMenu()"
+             [class.active]="isMarksheetExpanded">
+          <span class="material-icons-round">description</span> 
+          <span class="nav-text" style="flex: 1;">Marksheet</span>
+          <span class="material-icons-round chevron nav-text" 
+                [style.transform]="isMarksheetExpanded ? 'rotate(180deg)' : 'rotate(0)'">
+            expand_more
+          </span>
+        </div>
+        
+        <div class="submenu" [class.open]="isMarksheetExpanded && isSidebarOpen">
+          <a routerLink="/marksheet" routerLinkActive="active" class="nav-item sub-item" (click)="closeMobileSidebar()">
+            <span class="material-icons-round">edit</span> 
+            <span class="nav-text">Enter Marks</span>
+          </a>
+          <a routerLink="/view-marks" routerLinkActive="active" class="nav-item sub-item" (click)="closeMobileSidebar()">
+            <span class="material-icons-round">visibility</span> 
+            <span class="nav-text">View Marks</span>
+          </a>
+        </div>
+      </div>
+  
+       <a routerLink="/exams" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <span class="material-icons-round">storage</span> 
+        <span class="nav-text">Storage</span>
+      </a>
+
+      <div class="nav-group" *ngIf="authService.isAdmin()">
+        <div class="nav-item parent-item" 
+             style="cursor: pointer;" 
+             (click)="toggleConfigMenu()"
+             [class.active]="isConfigExpanded">
+          <span class="material-icons-round">settings</span> 
+          <span class="nav-text" style="flex: 1;">Configuration</span>
+          <span class="material-icons-round chevron nav-text" 
+                [style.transform]="isConfigExpanded ? 'rotate(180deg)' : 'rotate(0)'">
+            expand_more
+          </span>
+        </div>
+        
+        <div class="submenu" [class.open]="isConfigExpanded && isSidebarOpen">
+          <a routerLink="/marksheet-config" routerLinkActive="active" class="nav-item sub-item" (click)="closeMobileSidebar()">
+            <span class="material-icons-round">toll</span> 
+            <span class="nav-text">Marksheet Config</span>
+          </a>
+          <a routerLink="/fee-config" routerLinkActive="active" class="nav-item sub-item" (click)="closeMobileSidebar()">
+            <span class="material-icons-round">pix</span> 
+            <span class="nav-text">Fee Config</span>
+          </a>
+        </div>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    
+    <header class="top-header">
+      
+      <button class="icon-btn mobile-menu-btn" (click)="toggleMobileSidebar()">
+        <span class="material-icons-round">menu</span>
+      </button>
+
+      <div class="search-bar hide-on-mobile">
+        <span class="material-icons-round">search</span>
+        <input type="text" placeholder="Search students, records...">
+      </div>
+      
+      <div class="header-actions">
+        
+        <button class="icon-btn" (click)="triggerTestNotification()" title="Notifications">
+          <span class="material-icons-round">notifications</span>
+        </button>
+        
+        <div class="user-profile">
+          <div class="user-info hide-on-mobile">
+            <span class="name">{{ userName }}</span>
+            <span class="role">{{ userRole }}</span>
+          </div>
+        </div>
+
+        <div class="header-divider hide-on-mobile"></div>
+
+        <button class="icon-btn logout-btn" (click)="logout()" title="Logout">
+          <span class="material-icons-round">logout</span>
+          <span class="logout-text hide-on-mobile">Logout</span>
+        </button>
+
+      </div>
+    </header>
+
+    <div class="page-content">
+      <router-outlet></router-outlet>
+    </div>
+    
+  </main>
+</div>

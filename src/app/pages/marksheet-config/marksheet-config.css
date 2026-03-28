@@ -1,0 +1,232 @@
+.page-title {
+  font-size: 22px;
+  font-weight: 500;
+  margin: 0 0 4px;
+  color: var(--text-main, #1e293b);
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: var(--text-muted, #64748b);
+  margin: 0;
+}
+
+.status-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-secondary, #f1f5f9);
+  padding: 4px;
+  border-radius: 10px;
+}
+
+.status-tabs button {
+  padding: 7px 16px;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted, #64748b);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.status-tabs button.active {
+  background: white;
+  color: var(--primary-color, #4f46e5);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pro-card {
+  background: white;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.form-control {
+  padding: 9px 12px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-main, #1e293b);
+  outline: none;
+  background: white;
+  transition: border-color 0.15s;
+  min-width: 0;
+}
+
+.form-control:focus {
+  border-color: var(--primary-color, #4f46e5);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.08);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  background: var(--primary-color, #4f46e5);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary .material-icons-round {
+  font-size: 16px;
+}
+
+/* Table */
+.table-responsive {
+  overflow-x: auto;
+}
+
+.pro-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.pro-table thead th {
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--bg-secondary, #f8fafc);
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  white-space: nowrap;
+}
+
+.pro-table tbody tr {
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  transition: background 0.1s;
+}
+
+.pro-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.pro-table tbody tr:hover {
+  background: var(--bg-secondary, #f8fafc);
+}
+
+.pro-table tbody td {
+  padding: 12px 16px;
+  color: var(--text-main, #1e293b);
+  vertical-align: middle;
+}
+
+.text-right {
+  text-align: right;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badge.paid {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge.pending {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+/* Action buttons */
+.icon-btn-small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 7px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--text-muted, #64748b);
+}
+
+.icon-btn-small:hover {
+  background: var(--bg-secondary, #f1f5f9);
+  border-color: var(--text-muted, #94a3b8);
+}
+
+.icon-btn-small.delete {
+  color: #ef4444;
+  border-color: #fecaca;
+}
+
+.icon-btn-small.delete:hover {
+  background: #fff5f5;
+  border-color: #ef4444;
+}
+
+.icon-btn-small .material-icons-round {
+  font-size: 16px;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-muted, #94a3b8);
+}
+
+.empty-icon {
+  font-size: 36px !important;
+  color: #d0d5dd;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  font-size: 13px;
+  margin: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

@@ -1,0 +1,253 @@
+<div class="page-container">
+  
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Institution Storage</h1>
+      <p class="page-subtitle">Manage, store, and distribute official school documents</p>
+    </div>
+  </div>
+
+  <div class="pro-card">
+    <div class="premium-toolbar">
+      <div class="toolbar-left">
+        
+        <div class="filter-group">
+          <label class="filter-label">Category:</label>
+          <div class="custom-select-wrapper active-select">
+            <select class="premium-select" [(ngModel)]="selectedCategory" (change)="onFilterChange()">
+              <option value="All">All Files</option>
+              <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+            </select>
+            <span class="material-icons-round custom-arrow">expand_more</span>
+          </div>
+        </div>
+
+        <div class="premium-search">
+          <span class="material-icons-round search-icon">search</span>
+          <input type="text" placeholder="Search files..." [(ngModel)]="searchText">
+        </div>
+      </div>
+
+     <div class="toolbar-right" style="display: flex; gap: 12px; align-items: center;">
+  
+  <button class="btn-secondary" (click)="openUploadPanel()" style="display: flex; align-items: center; gap: 6px;">
+    <span class="material-icons-round" style="font-size: 18px;">cloud_upload</span> 
+    Upload File
+  </button>
+  
+  <button class="btn-primary ai-btn" (click)="openGeneratePanel()" style="display: flex; align-items: center; gap: 6px;">
+    <span class="material-icons-round" style="font-size: 18px;">auto_awesome</span> 
+    Generate Paper
+  </button>
+
+</div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="pro-table">
+        <thead>
+          <tr>
+            <th>Document Info</th>
+            <th>Category</th>
+            <th>File Size</th>
+            <th>Uploaded On</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+          <tr *ngIf="pagedFiles.length === 0">
+            <td colspan="5" class="empty-state">
+              <span class="material-icons-round empty-icon">snippet_folder</span>
+              <p>No documents found in this category.</p>
+            </td>
+          </tr>
+
+          <tr *ngFor="let file of pagedFiles">
+            <td>
+              <div class="document-cell">
+                <div class="doc-icon"><span class="material-icons-round">insert_drive_file</span></div>
+                <div class="doc-info">
+                  <span class="doc-title">{{ file.title }}</span>
+                  <span class="doc-subtitle">{{ file.originalFileName }}</span>
+                </div>
+              </div>
+            </td>
+            
+            <td><span class="badge gray">{{ file.category }}</span></td>
+            <td class="text-muted">{{ formatBytes(file.fileSize) }}</td>
+            <td class="text-muted">{{ file.uploadedAt | date:'mediumDate' }}</td>
+            
+            <td class="text-right">
+              <div class="action-buttons">
+                <button class="icon-btn-small action-icon download-icon" title="Download" (click)="downloadFile(file.id, file.originalFileName)">
+                  <span class="material-icons-round">download</span>
+                </button>
+                <button class="icon-btn-small delete action-icon" title="Delete" (click)="deleteFile(file)" *ngIf="authService.isAdmin()">
+                  <span class="material-icons-round">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-footer" *ngIf="totalItems > 0">
+      <div class="pagination-info">Showing <strong>{{ startIndex + 1 }}</strong> to <strong>{{ endIndex }}</strong> of <strong>{{ totalItems }}</strong> files</div>
+      <div class="clean-pagination">
+        <button class="nav-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)"><span class="material-icons-round">arrow_back</span> Prev</button>
+        <div class="page-numbers">
+          <button class="num-btn" *ngFor="let page of pages" [class.active]="currentPage === page" (click)="goToPage(page)">{{ page }}</button>
+        </div>
+        <button class="nav-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">Next <span class="material-icons-round">arrow_forward</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel-backdrop" [class.active]="isSidePanelOpen" (click)="closePanel()"></div>
+
+<div class="side-panel" [class.open]="isSidePanelOpen">
+  
+  <div class="panel-header">
+    <h2>Upload Document</h2>
+    <button class="icon-btn-small" (click)="closePanel()"><span class="material-icons-round">close</span></button>
+  </div>
+
+  <div class="panel-body">
+    
+    <div class="form-group">
+      <label>Select File <span class="required">*</span></label>
+      <input type="file" class="form-control" (change)="onFileSelected($event)" style="padding: 9px;">
+    </div>
+
+    <div class="form-group">
+      <label>Document Title <span class="required">*</span></label>
+      <input type="text" class="form-control" placeholder="e.g., Annual Sports Day Circular" [(ngModel)]="newFileTitle">
+    </div>
+
+    <div class="form-group">
+      <label>Category <span class="required">*</span></label>
+      <select class="form-control" [(ngModel)]="newFileCategory">
+        <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+      </select>
+    </div>
+
+    <div class="ai-banner" style="background: #f8fafc; border-color: #e2e8f0;">
+      <span class="material-icons-round" style="color: #64748b;">cloud_sync</span>
+      <div class="ai-text">
+        <strong style="color: #475569;">Secure Storage</strong>
+        <span style="color: #64748b;">Files are safely encrypted and stored in your private institution repository.</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="panel-footer">
+    <button class="btn-secondary" (click)="closePanel()">Cancel</button>
+    <button class="btn-primary" (click)="uploadFile()" [disabled]="isUploading">
+      <span class="material-icons-round" *ngIf="!isUploading">upload</span>
+      {{ isUploading ? 'Uploading...' : 'Upload Now' }}
+    </button>
+  </div>
+
+</div>
+
+<div class="panel-backdrop" [class.active]="isExamSidePanelOpen" (click)="!isGenerating && closeExamPanel()"></div>
+
+<div class="side-panel" [class.open]="isExamSidePanelOpen">
+  
+  <div class="panel-header">
+    <div>
+      <h2>AI Paper Generator</h2>
+      <span style="font-size: 12px; color: var(--text-muted);">Configure parameters for Gemini AI</span>
+    </div>
+    <button class="icon-btn-small" (click)="closeExamPanel()" [disabled]="isGenerating">
+      <span class="material-icons-round">close</span>
+    </button>
+  </div>
+
+  <div class="panel-body">
+    
+    <div class="form-group">
+      <label>Institution Name</label>
+      <input type="text" class="form-control" [(ngModel)]="newPaper.schoolName">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group half-width">
+        <label>Exam Name <span class="required">*</span></label>
+        <input type="text" class="form-control" placeholder="e.g. Unit Test 1" [(ngModel)]="newPaper.examName">
+      </div>
+      <div class="form-group half-width">
+        <label>Academic Year</label>
+        <input type="text" class="form-control" [(ngModel)]="newPaper.examYear">
+      </div>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid var(--border-color); margin: 8px 0;">
+
+    <div class="form-row">
+      <div class="form-group half-width">
+        <label>Grade/Class <span class="required">*</span></label>
+        
+        <select class="form-control" [(ngModel)]="newPaper.grade" (change)="onGradeChange()">
+          <option *ngFor="let grade of standards" [value]="grade.value">
+            {{ grade.label }}
+          </option>
+        </select>
+        
+      </div>
+      <div class="form-group half-width">
+        <label>Subject <span class="required">*</span></label>
+        <select class="form-control" [(ngModel)]="newPaper.subject" (change)="onSubjectChange()" [disabled]="configuredSubjects.length === 0">
+          <option *ngIf="configuredSubjects.length === 0" value="">No subjects configured</option>
+          <option *ngFor="let sub of configuredSubjects" [value]="sub.subjectName">
+            {{ sub.subjectName }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Chapters / Topics <span class="required">*</span></label>
+      <input type="text" class="form-control" placeholder="e.g. Thermodynamics, Kinematics (Comma separated)" [(ngModel)]="newPaper.chapters">
+    </div>
+<div class="form-group" style="margin-top: 8px; margin-bottom: 8px;">
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+        <input type="checkbox" [(ngModel)]="newPaper.includeAnswers" style="width: 16px; height: 16px; accent-color: var(--primary-color);">
+        <span style="font-size: 13px; font-weight: 600; color: var(--text-main);">Generate Answer Key & Marking Scheme</span>
+      </label>
+    </div>
+    <div class="form-group" style="width: 50%;">
+      <label>Total Marks <span class="required">*</span></label>
+      <input type="number" class="form-control" [(ngModel)]="newPaper.totalMarks">
+    </div>
+
+    <div class="form-group">
+      <label>Include Question Types <span class="required">*</span></label>
+      <div class="chip-group">
+        <div class="chip" 
+             *ngFor="let type of availableQuestionTypes" 
+             [class.selected]="newPaper.questionTypes.includes(type)"
+             (click)="toggleQuestionType(type)">
+          {{ type }}
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="panel-footer">
+    <button class="btn-secondary" (click)="closeExamPanel()" [disabled]="isGenerating">Cancel</button>
+    <button class="btn-primary ai-btn" (click)="generateAndDownloadPaper()" [disabled]="isGenerating">
+      <span class="material-icons-round" [class.spin]="isGenerating">
+        {{ isGenerating ? 'autorenew' : 'auto_awesome' }}
+      </span> 
+      {{ isGenerating ? 'Generating Doc...' : 'Generate Word Paper' }}
+    </button>
+  </div>
+
+</div>

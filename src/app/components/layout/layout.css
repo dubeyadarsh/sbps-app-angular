@@ -1,0 +1,396 @@
+.app-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 260px;
+  background: var(--card-bg);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- PREMIUM LOGO STYLES --- */
+.logo-area {
+  padding: 24px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px; /* Space between icon box and text */
+  cursor: pointer;
+  border-bottom: 1px solid transparent; /* Optional: adds structure */
+}
+
+/* The App Icon Box */
+.logo-icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--primary-color);
+  color: white;
+  min-width: 40px;
+  height: 40px;
+  border-radius: 10px; /* Gives it that modern rounded-square app look */
+  box-shadow: 0 4px 10px var(--primary-shadow);
+  transition: transform 0.2s ease;
+}
+
+.logo-icon-box .material-icons-round {
+  font-size: 22px;
+  color: white;
+}
+
+/* Text Container */
+.logo-text-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Main Brand Text */
+.logo-text {
+  font-size: 22px;
+  font-weight: 800; /* Extra bold for the brand name */
+  color: var(--text-main);
+  letter-spacing: -0.5px; /* Pulls letters slightly together for a sleek look */
+  line-height: 1.1;
+}
+
+.text-primary {
+  color: var(--primary-color); /* Makes "Manage" pop with your theme color */
+}
+
+/* Subtitle */
+.logo-subtext {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+/* --- COLLAPSED STATE OVERRIDES --- */
+.sidebar.collapsed .logo-area {
+  padding: 24px 0;
+  justify-content: center;
+}
+
+/* Hide the text wrapper entirely when collapsed */
+.sidebar.collapsed .logo-text-wrapper {
+  display: none;
+}
+.theme-icon {
+  color: var(--primary-color);
+}
+
+.nav-links {
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px;
+  gap: 8px;
+}
+/* Base Navigation Item */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: var(--text-muted); /* Grey for inactive */
+  border-radius: var(--border-radius-md);
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  margin-bottom: 4px; /* Slight spacing between items */
+}
+
+.nav-item:hover {
+  background: var(--bg-color); /* Light grey on hover */
+  color: var(--text-main);
+}
+
+/* THE MAGIC: Premium Active State */
+.nav-item.active {
+  background: var(--primary-light); /* Soft tint of your primary color */
+  color: var(--primary-color); /* Bold primary color for text */
+  font-weight: 600; /* Makes the active text thicker */
+}
+
+/* Ensure the icon also gets the primary color */
+.nav-item.active .material-icons-round {
+  color: var(--primary-color);
+}
+/* Update the main wrapper so it doesn't scroll entirely */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* CHANGED: Stop the whole right side from scrolling */
+  background-color: var(--bg-color);
+}
+
+/* Lock the header height */
+.top-header {
+  height: 70px;
+  min-height: 70px; /* NEW: Forces the header to stay exactly 70px */
+  flex-shrink: 0; /* THE MAGIC FIX: Tells Flexbox "Never squish this element!" */
+  background: var(--card-bg);
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color);
+  z-index: 10; /* Ensures the header shadow stays above the scrolling content */
+}
+
+/* Allow ONLY the dashboard content to scroll */
+.page-content {
+  padding: 32px;
+  overflow-y: auto; /* NEW: The scrollbar will now only appear for the dashboard */
+  flex: 1; /* NEW: Tells the content area to fill the remaining space below the header */
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: var(--bg-color);
+  padding: 8px 16px;
+  border-radius: 20px;
+  width: 300px;
+}
+
+.search-bar input {
+  border: none;
+  background: transparent;
+  outline: none;
+  margin-left: 8px;
+  width: 100%;
+}
+
+
+/* --- SIDEBAR TOGGLE STYLES --- */
+.sidebar {
+  width: 260px;
+  background: var(--card-bg);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease; /* Smooth sliding animation */
+}
+
+/* When collapsed, shrink the width */
+.sidebar.collapsed {
+  width: 80px; 
+}
+
+/* Center the logo icon when collapsed */
+.sidebar.collapsed .logo-area {
+  justify-content: center;
+  padding: 24px 0;
+}
+
+/* Center the nav icons when collapsed */
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 12px;
+}
+
+/* Ensure icons don't shrink */
+.nav-item .material-icons-round {
+  font-size: 24px;
+  min-width: 24px; 
+}
+
+/* --- HEADER FIXES --- */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 24px; /* Space between bell and profile */
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.icon-btn:hover {
+  color: var(--primary-color);
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* Space between image and text */
+  cursor: pointer;
+}
+
+.user-profile img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #e0e0e0; /* Placeholder color if image breaks */
+  border: 2px solid var(--border-color);
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-info .name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.user-info .role {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+/* Hide hamburger on desktop */
+.mobile-menu-btn {
+  display: none; 
+}
+/* --- DESKTOP COLLAPSED STATE FIX --- */
+
+/* 1. Shrink the sidebar width */
+.sidebar.collapsed {
+  width: 80px;
+}
+
+/* 2. Force the text to hide */
+.sidebar.collapsed .logo-text-wrapper,
+.sidebar.collapsed .nav-text {
+  display: none !important; /* !important ensures it doesn't get overridden */
+}
+
+/* 3. Re-center the icons perfectly */
+.sidebar.collapsed .logo-area,
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Make sure tooltip/title shows up nicely when hovering over the collapsed icons */
+.sidebar.collapsed .nav-item {
+  padding: 16px 0;
+}
+/* Tablet & Mobile Layout Rules */
+@media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: flex;
+    margin-right: auto; /* Pushes it to the left */
+  }
+
+  .header-actions {
+    margin-left: auto; /* Keeps profile on the right */
+  }
+
+  /* Transform Sidebar into a mobile drawer */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: -260px; /* Hide off-screen by default */
+    z-index: 999;
+    width: 260px;
+    box-shadow: var(--shadow-md);
+  }
+
+  /* When the toggle button is clicked */
+  .sidebar.mobile-open {
+    left: 0; 
+  }
+
+  /* Override the desktop collapse feature on mobile */
+  .sidebar.collapsed { width: 260px; }
+  .sidebar.collapsed .logo-text-wrapper,
+  .sidebar.collapsed .nav-text { display: block; }
+  .sidebar.collapsed .logo-area,
+  .sidebar.collapsed .nav-item { justify-content: flex-start; padding-left: 16px;}
+  
+  .page-content { padding: 16px; } /* Less padding on mobile screens */
+}
+
+/* --- SUBMENU STYLES --- */
+
+/* Give the chevron a smooth spin animation */
+.chevron {
+  transition: transform 0.3s ease-in-out;
+}
+
+.submenu {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 0; /* Hidden by default */
+  transition: max-height 0.3s ease-in-out;
+  margin-left: 20px; /* Indent the submenu */
+  border-left: 1px solid var(--border-color);
+  padding-left: 8px; /* Space between the border line and items */
+}
+
+/* When expanded, give it enough height to show the children */
+.submenu.open {
+  max-height: 150px; 
+}
+
+/* Hide submenu completely when the sidebar shrinks to icon-only mode */
+.sidebar.collapsed .submenu {
+  display: none !important;
+}
+
+/* Make submenu items slightly smaller for visual hierarchy */
+.sub-item {
+  padding: 10px 14px;
+  margin-bottom: 2px;
+}
+
+.sub-item .material-icons-round {
+  font-size: 20px; /* Slightly smaller icon */
+}
+
+.sub-item .nav-text {
+  font-size: 13px; /* Slightly smaller text */
+}
+
+/* --- HEADER DIVIDER & LOGOUT STYLES --- */
+.header-divider {
+  width: 1px;
+  height: 28px;
+  background-color: var(--border-color);
+  margin: 0 4px;
+}
+
+.logout-btn {
+  color: #ef4444; /* Clean Red */
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+  background-color: #fef2f2; /* Light red tint */
+  color: #dc2626; /* Darker red on hover */
+}
+
+.logout-text {
+  font-size: 13px;
+  font-weight: 600;
+}

@@ -1,0 +1,268 @@
+<div class="page-container relative-container">
+  
+  <div class="loader-overlay" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Processing data...</p>
+  </div>
+
+  <div class="pro-card">
+    
+    <div class="premium-toolbar">
+      <div class="toolbar-left">
+       <div class="custom-select-wrapper" [class.active-select]="selectedGrade">
+  <select 
+    class="premium-select" 
+    [(ngModel)]="selectedGrade" 
+    (change)="onFilterChange()"
+  >
+    <option value="">-- Select --</option>
+
+    <option *ngFor="let std of standards" [value]="std.value">
+      {{ std.label }}
+    </option>
+
+  </select>
+  <span class="material-icons-round custom-arrow">expand_more</span>
+</div>
+        <div class="premium-search" [class.disabled]="!selectedGrade">
+          <span class="material-icons-round search-icon">search</span>
+          <input type="text" placeholder="Search by name, phone..." 
+                 [(ngModel)]="searchText" (input)="onFilterChange()" [disabled]="!selectedGrade">
+        </div>
+      </div>
+
+      <div class="toolbar-right">
+        <button class="btn-secondary" (click)="downloadTemplate()">
+          <span class="material-icons-round">download</span> Template
+        </button>
+
+        <input type="file" #fileInput (change)="onFileSelected($event)" accept=".xlsx" style="display: none;">
+        
+        <button class="btn-secondary" (click)="fileInput.click()">
+          <span class="material-icons-round">upload_file</span> Bulk Add
+        </button>
+        
+        <button class="btn-primary" (click)="openAddStudentModal()">
+          <span class="material-icons-round">person_add</span> Add Student
+        </button>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="pro-table">
+        <thead>
+          <tr>
+            <th>Student Info</th>
+            <th>SR No.</th>
+            <th>Parents</th>
+            <th>DOB</th>
+            <th>Address</th>
+            <th>Admission On</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+          <tr *ngIf="!selectedGrade">
+            <td colspan="7" class="empty-state">
+              <span class="material-icons-round empty-icon">school</span>
+              <p>Please select a grade to view and manage students.</p>
+            </td>
+          </tr>
+
+          <tr *ngIf="selectedGrade && pagedStudents.length === 0 && !isLoading">
+            <td colspan="7" class="empty-state">
+              <p>No students found matching your criteria.</p>
+            </td>
+          </tr>
+
+          <tr *ngFor="let student of pagedStudents">
+            <td>
+              <div class="user-cell">
+                <!-- <img [src]="student.avatar" alt="avatar" class="avatar-sm" crossorigin="anonymous"> -->
+                <div class="user-cell-info">
+                  <span class="user-name">{{ student.name }}</span>
+                  <span class="user-email"><span class="material-icons-round" style="font-size: 11px;">phone</span> {{ student.phoneNumber || 'N/A' }}</span>
+                </div>
+              </div>
+            </td>
+            <td class="text-muted"><strong>{{ student.srNumber }}</strong></td>
+            <td>
+              <div class="parent-cell">
+                <span><strong>F:</strong> {{ student.fathersName || '-' }}</span>
+                <span><strong>M:</strong> {{ student.mothersName || '-' }}</span>
+              </div>
+            </td>
+            <td class="text-muted">{{ student.dob | date:'dd MMM yyyy' }}</td>
+            <td class="text-muted">{{ student.address  }}</td>
+            <td class="text-muted" style="font-size: 12px;">{{ student.createdAt | date:'short' }}</td>
+            <td class="text-right">
+              <div class="action-buttons">
+                <button class="icon-btn-small" title="Generate ID Card" (click)="downloadIdCardFromTable(student)">
+                  <span class="material-icons-round">badge</span>
+                </button>
+                <button class="icon-btn-small" title="Edit Student" (click)="openPanel('edit', student)">
+                  <span class="material-icons-round">edit</span>
+                </button>
+                <button class="icon-btn-small delete" title="Delete Student" (click)="deleteStudent(student)">
+                  <span class="material-icons-round">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-footer" *ngIf="selectedGrade && totalItems > 0">
+      <div class="pagination-info">Showing <strong>{{ startIndex + 1 }}</strong> to <strong>{{ endIndex }}</strong> of <strong>{{ totalItems }}</strong> students</div>
+      <div class="pagination-controls">
+        <button class="page-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)"><span class="material-icons-round">chevron_left</span></button>
+        <button class="page-btn num-btn" *ngFor="let page of pages" [class.active]="currentPage === page" (click)="goToPage(page)">{{ page }}</button>
+        <button class="page-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)"><span class="material-icons-round">chevron_right</span></button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="panel-backdrop" [class.active]="isSidePanelOpen" (click)="closePanel()"></div>
+
+<div class="side-panel" [class.open]="isSidePanelOpen">
+  <div class="panel-header">
+    <h2>{{ panelMode === 'add' ? 'Add New Student' : 'Edit Student Details' }}</h2>
+    <button class="icon-btn-small" (click)="closePanel()"><span class="material-icons-round">close</span></button>
+  </div>
+
+  <div class="panel-body">
+    <div class="photo-upload-section">
+      <div class="photo-wrapper" (click)="photoInput.click()">
+        <img [src]="photoPreviewUrl || currentStudent.avatar || defaultAvatar" alt="Student Photo" class="profile-preview">
+        <div class="photo-overlay">
+          <span class="material-icons-round">photo_camera</span>
+          <span>Upload</span>
+        </div>
+      </div>
+      <input type="file" #photoInput (change)="onPhotoSelected($event)" accept="image/png, image/jpeg, image/jpg" style="display: none;">
+      <small class="photo-hint">Allowed: JPG, PNG. Max: 2MB</small>
+    </div>
+    <div class="form-row">
+      <div class="form-group half-width">
+        <label>SR Number <span class="required">*</span></label>
+        <input type="text" class="form-control" [class.is-invalid]="formErrors.srNumber" placeholder="" [(ngModel)]="currentStudent.srNumber">
+        <small class="error-text" *ngIf="formErrors.srNumber">{{ formErrors.srNumber }}</small>
+      </div>
+      <div class="form-group half-width">
+        <label>Standard <span class="required">*</span></label>
+        <select class="form-control" [class.is-invalid]="formErrors.standard" [(ngModel)]="currentStudent.standard">
+          <option value="">-- Select --</option>
+
+    <option *ngFor="let std of standards" [value]="std.value">
+      {{ std.label }}
+    </option>
+        </select>
+        <small class="error-text" *ngIf="formErrors.standard">{{ formErrors.standard }}</small>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Full Name <span class="required">*</span></label>
+      <input type="text" class="form-control" [class.is-invalid]="formErrors.name" placeholder="Student's Full Name" [(ngModel)]="currentStudent.name">
+      <small class="error-text" *ngIf="formErrors.name">{{ formErrors.name }}</small>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group half-width">
+        <label>Father's Name <span class="required">*</span></label>
+        <input type="text" class="form-control" [class.is-invalid]="formErrors.fathersName" placeholder="Father's Name" [(ngModel)]="currentStudent.fathersName">
+        <small class="error-text" *ngIf="formErrors.fathersName">{{ formErrors.fathersName }}</small>
+      </div>
+      <div class="form-group half-width">
+        <label>Mother's Name <span class="required">*</span></label>
+        <input type="text" class="form-control" [class.is-invalid]="formErrors.mothersName" placeholder="Mother's Name" [(ngModel)]="currentStudent.mothersName">
+        <small class="error-text" *ngIf="formErrors.mothersName">{{ formErrors.mothersName }}</small>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group half-width">
+        <label>Date of Birth <span class="required">*</span></label>
+        <input type="date" class="form-control" [class.is-invalid]="formErrors.dob" [(ngModel)]="currentStudent.dob">
+        <small class="error-text" *ngIf="formErrors.dob">{{ formErrors.dob }}</small>
+      </div>
+      <div class="form-group half-width">
+        <label>Phone Number <span class="required">*</span></label>
+        <input type="text" class="form-control" [class.is-invalid]="formErrors.phoneNumber" placeholder="10-digit number" [(ngModel)]="currentStudent.phoneNumber">
+        <small class="error-text" *ngIf="formErrors.phoneNumber">{{ formErrors.phoneNumber }}</small>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group half-width">
+        <label>Aadhar Number</label>
+        <input type="text" class="form-control" placeholder="Optional" [(ngModel)]="currentStudent.aadharNumber">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Residential Address</label>
+      <textarea class="form-control" rows="2" placeholder="Full Residential Address" [(ngModel)]="currentStudent.address"></textarea>
+    </div>
+
+  </div>
+
+  <div class="panel-footer">
+    <button class="btn-secondary" (click)="closePanel()">Cancel</button>
+    <button class="btn-primary" (click)="saveStudent()" [disabled]="isLoading">
+      <span class="material-icons-round" *ngIf="!isLoading">save</span>
+      <span class="spinner-small" *ngIf="isLoading"></span>
+      {{ panelMode === 'add' ? 'Save Record' : 'Update Details' }}
+    </button>
+  </div>
+</div>
+
+<div class="id-modal-backdrop" *ngIf="showIdModal">
+  <div class="id-modal-content">
+    
+    <div class="id-modal-header">
+      <h3>Student ID Generated</h3>
+      <button class="icon-btn-small" (click)="closeIdModal()"><span class="material-icons-round">close</span></button>
+    </div>
+
+    <div class="id-card-wrapper" #idCardElement *ngIf="generatedStudent">
+      
+      <div class="id-card-header">
+        <h4>S.B. PUBLIC SCHOOL</h4>
+        <p>Identity Card {{academicYear}}</p>
+      </div>
+
+      <div class="id-card-body">
+        <img [src]="generatedStudent.avatar" alt="Student Photo" class="id-photo" crossorigin="anonymous">
+        
+        <h2 class="id-name">{{ generatedStudent.name }}</h2>
+        <span class="id-grade">Standard: Grade {{ generatedStudent.standard }}</span>
+        
+        <div class="id-details-grid">
+          <div class="id-row"><span class="id-label">DOB:</span> <span class="id-val">{{ generatedStudent.dob | date:'dd-MM-yyyy' }}</span></div>
+          <div class="id-row"><span class="id-label">SR No:</span> <span class="id-val">{{ generatedStudent.srNumber }}</span></div>
+          <div class="id-row"><span class="id-label">Phone:</span> <span class="id-val">{{ generatedStudent.phoneNumber }}</span></div>
+        </div>
+      </div>
+
+      <div class="id-card-footer">
+        <div class="id-address">{{ generatedStudent.address || 'Address not provided' }}</div>
+        <div class="signature-line">Principal Signature</div>
+      </div>
+      
+    </div>
+
+    <div class="id-modal-actions">
+      <button class="btn-secondary" (click)="closeIdModal()">Close</button>
+      <button class="btn-primary" (click)="downloadIdCardPDF()">
+        <span class="material-icons-round">download</span> Download PDF
+      </button>
+    </div>
+
+  </div>
+</div>

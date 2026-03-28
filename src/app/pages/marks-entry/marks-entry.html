@@ -1,0 +1,132 @@
+    <div class="page-container">
+  
+
+    <!-- Filters -->
+    <div class="pro-card" style="padding:20px;margin-bottom:20px;">
+        <div class="form-row" style="gap:16px;align-items:flex-end;">
+        <div class="form-group" style="min-width:130px;">
+            <label>Grade</label>
+            <select class="form-control" [(ngModel)]="selectedGrade" (change)="onGradeChange()">
+            <option value="">Select grade...</option>
+            <option value="9">Grade 9</option>
+            <option value="10">Grade 10</option>
+            <option value="11">Grade 11</option>
+            <option value="12">Grade 12</option>
+            </select>
+        </div>
+        <div class="form-group" style="flex:2;" *ngIf="exams.length > 0">
+            <label>Exam</label>
+            <select class="form-control" [(ngModel)]="selectedExamId" (change)="loadGrid()">
+            <option value="">Select exam...</option>
+            <option *ngFor="let e of exams" [value]="e.id">{{ e.name }} ({{ e.academicYear }})</option>
+            </select>
+        </div>
+        <div *ngIf="selectedGrade && exams.length === 0" style="color:var(--text-muted);font-size:13px;padding-bottom:8px;">
+            No exams found for this grade. Create one in configuration.
+        </div>
+        </div>
+    </div>
+
+    <!-- Marks Grid -->
+    <div class="pro-card" *ngIf="selectedExamId && !isLoading">
+
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;">
+        <div>
+            <strong>{{ examName }}</strong>
+            <span style="font-size:13px;color:var(--text-muted);margin-left:8px;">{{ rows.length }} students · {{ configs.length }} subjects</span>
+        </div>
+        <button class="btn-primary" style="padding:8px 20px;" (click)="saveAll()" [disabled]="isSaving">
+            <span class="material-icons-round" *ngIf="isSaving" style="font-size:15px;animation:spin 1s linear infinite;">autorenew</span>
+            <span *ngIf="!isSaving"><span class="material-icons-round" style="font-size:15px;">save</span> Save All</span>
+            <span *ngIf="isSaving">Saving...</span>
+        </button>
+        </div>
+
+        <div style="overflow-x:auto;">
+        <table class="pro-table marks-table">
+            <thead>
+            <!-- Row 1: Subject group headers -->
+            <tr>
+                <th rowspan="2" style="min-width:180px;position:sticky;left:0;z-index:2;background:var(--bg-secondary,#f8fafc);">Student</th>
+                <th *ngFor="let c of configs"
+                    [attr.colspan]="c.hasPractical ? 2 : 1"
+                    style="text-align:center;background:var(--bg-secondary,#f8fafc);border-bottom:1px solid var(--border-color);">
+                {{ c.subjectName }}
+                <span *ngIf="!c.isCompulsory" style="font-size:10px;color:var(--text-muted);"> (opt)</span>
+                </th>
+                <th rowspan="2" style="text-align:center;min-width:80px;background:var(--bg-secondary,#f8fafc);">Total</th>
+            </tr>
+            <!-- Row 2: Theory / Practical sub-headers -->
+            <tr>
+                <ng-container *ngFor="let c of configs">
+                <th style="text-align:center;font-size:11px;color:var(--text-muted);min-width:70px;background:var(--bg-secondary,#f8fafc);">
+                    Th /{{ c.theoryMaxMarks }}
+                </th>
+                <th *ngIf="c.hasPractical" style="text-align:center;font-size:11px;color:var(--text-muted);min-width:70px;background:var(--bg-secondary,#f8fafc);">
+                    Pr /{{ c.practicalMaxMarks }}
+                </th>
+                </ng-container>
+            </tr>
+            </thead>
+            <tbody>
+            <tr *ngFor="let row of rows" [class.row-saved]="row._saved" [class.row-error]="row._hasError">
+                <!-- Student cell -->
+                <td style="position:sticky;left:0;background:white;z-index:1;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div>
+                    <div style="font-weight:600;font-size:13px;">{{ row.studentName }}</div>
+                    <div style="font-size:11px;color:var(--text-muted);">{{ row.srNumber }}</div>
+                    </div>
+                </div>
+                </td>
+
+                <!-- Marks cells -->
+                <ng-container *ngFor="let m of row.marks; let i = index">
+                <!-- Theory -->
+                <td style="padding:6px 8px;">
+                    <input type="number"
+                        class="marks-input"
+                        [class.input-error]="isOverMax(m.theoryMarks, configs[i].theoryMaxMarks)"
+                        [(ngModel)]="m.theoryMarks"
+                        (ngModelChange)="onMarksChange(row, i)"
+                        [placeholder]="'/' + configs[i].theoryMaxMarks"
+                        min="0"
+                        [max]="configs[i].theoryMaxMarks">
+                </td>
+                <!-- Practical (only if subject has it) -->
+                <td *ngIf="configs[i].hasPractical" style="padding:6px 8px;">
+                    <input type="number"
+                        class="marks-input practical-input"
+                        [class.input-error]="isOverMax(m.practicalMarks, configs[i].practicalMaxMarks)"
+                        [(ngModel)]="m.practicalMarks"
+                        (ngModelChange)="onMarksChange(row, i)"
+                        [placeholder]="'/' + configs[i].practicalMaxMarks"
+                        min="0"
+                        [max]="configs[i].practicalMaxMarks">
+                </td>
+                </ng-container>
+
+                <!-- Row total -->
+                <td style="text-align:center;font-weight:600;">
+                {{ getRowTotal(row) }} / {{ getRowMax(row) }}
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+    <!-- Loading state -->
+    <div *ngIf="isLoading" style="text-align:center;padding:60px;color:var(--primary-color);">
+        <span class="material-icons-round" style="font-size:32px;animation:spin 1s linear infinite;">autorenew</span>
+        <p style="margin-top:8px;">Loading marks grid...</p>
+    </div>
+
+    <!-- No exam selected -->
+    <div *ngIf="!selectedExamId && selectedGrade && !isLoading" class="pro-card"
+        style="padding:60px;text-align:center;color:var(--text-muted);">
+        <span class="material-icons-round" style="font-size:40px;color:#d0d5dd;">grading</span>
+        <p style="margin-top:12px;">Select an exam to begin entering marks.</p>
+    </div>
+
+    </div>

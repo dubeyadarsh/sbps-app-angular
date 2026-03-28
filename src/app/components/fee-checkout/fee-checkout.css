@@ -1,0 +1,213 @@
+.checkout-wrapper {
+  padding: 4px 0 80px;
+}
+
+/* Assign strip */
+.assign-strip {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-secondary, #f8fafc);
+  border: 1px dashed var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.assign-select {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  font-size: 13px;
+  outline: none;
+  background: white;
+}
+.assign-btn {
+  background: var(--primary-color, #4f46e5);
+  color: white;
+  border: none;
+  padding: 7px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  min-width: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: opacity 0.2s;
+}
+.assign-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Section label */
+.fee-section { margin-bottom: 20px; }
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+.month-summary {
+  margin-left: auto;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* One-time fees */
+.onetime-list { display: flex; flex-direction: column; gap: 6px; }
+.onetime-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  background: white;
+  transition: border-color 0.15s;
+}
+.onetime-row.is-paid {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  opacity: 0.8;
+}
+.onetime-name { font-weight: 500; font-size: 14px; }
+.onetime-right { display: flex; align-items: center; gap: 10px; }
+.amount-text { font-size: 14px; font-weight: 600; color: var(--text-main, #1e293b); }
+.check-label { cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.fee-checkbox { width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary-color, #4f46e5); }
+
+/* Month chips grid */
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.month-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 6px;
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  background: white;
+  min-height: 64px;
+  text-align: center;
+}
+.month-chip:hover:not(.chip-paid):not(.chip-locked) {
+  border-color: var(--primary-color, #4f46e5);
+  background: #eef2ff;
+}
+.chip-paid {
+  background: #f0fdf4;
+  border-color: #86efac;
+  cursor: default;
+  opacity: 0.75;
+}
+.chip-selected {
+  background: #eef2ff;
+  border-color: var(--primary-color, #4f46e5);
+  border-width: 2px;
+}
+.chip-locked {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #f8fafc;
+}
+.chip-month {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main, #1e293b);
+}
+.chip-amount {
+  font-size: 11px;
+  color: var(--text-muted, #64748b);
+  margin-top: 2px;
+}
+.chip-icon {
+  font-size: 14px !important;
+  position: absolute;
+  top: 5px;
+  right: 5px;
+}
+.chip-paid .chip-icon { color: #16a34a; }
+.chip-selected .chip-icon { color: var(--primary-color, #4f46e5); }
+.chip-locked .chip-icon { color: #94a3b8; }
+
+/* Badges */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.badge.paid { background: #dcfce7; color: #15803d; }
+.badge.pending { background: #fef9c3; color: #854d0e; }
+
+/* Footer */
+.checkout-footer {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  border-top: 1px solid var(--border-color, #e2e8f0);
+  padding: 12px 0;
+  margin-top: 16px;
+}
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: var(--text-muted, #64748b);
+}
+.total-amount {
+  font-size: 20px;
+  color: var(--text-main, #1e293b);
+}
+.footer-actions { display: flex; gap: 8px; }
+.mode-select {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  font-size: 13px;
+  outline: none;
+}
+.btn-pay {
+  flex: 2;
+  background: var(--primary-color, #4f46e5);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: opacity 0.2s;
+}
+.btn-pay:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Empty + loading */
+.empty-dues {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-muted, #94a3b8);
+}
+.empty-dues p { margin-top: 8px; font-size: 14px; }
+.loading-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--primary-color, #4f46e5);
+}
+.loading-state p { margin-top: 8px; font-size: 14px; font-weight: 500; }
+
+@keyframes spin { to { transform: rotate(360deg); } }

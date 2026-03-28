@@ -1,0 +1,208 @@
+<div class="page-container">
+
+  <div class="reports-grid" *ngIf="selectedGrade">
+    <div class="report-card primary">
+      <div class="r-icon"><span class="material-icons-round">account_balance</span></div>
+      <div class="r-data"><span>Total Expected</span>
+        <h3>₹{{ reportStats.total | number:'1.2-2' }}</h3>
+      </div>
+    </div>
+    <div class="report-card success">
+      <div class="r-icon"><span class="material-icons-round">task_alt</span></div>
+      <div class="r-data"><span>Total Collected</span>
+        <h3>₹{{ reportStats.collected | number:'1.2-2' }}</h3>
+      </div>
+    </div>
+    <div class="report-card warning">
+      <div class="r-icon"><span class="material-icons-round">pending_actions</span></div>
+      <div class="r-data"><span>Pending</span>
+        <h3>₹{{ reportStats.pending | number:'1.2-2' }}</h3>
+      </div>
+    </div>
+    <div class="report-card danger">
+      <div class="r-icon"><span class="material-icons-round">warning_amber</span></div>
+      <div class="r-data"><span>Overdue</span>
+        <h3>₹{{ reportStats.overdue | number:'1.2-2' }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="pro-card">
+    <div class="premium-toolbar">
+      <div class="toolbar-left">
+
+        <div class="filter-group">
+          <label class="filter-label">Grade:</label>
+          <div class="custom-select-wrapper" [class.active-select]="selectedGrade">
+            <select class="premium-select" [(ngModel)]="selectedGrade" (change)="onFilterChange()">
+              <option value="">-- Select --</option>
+
+              <option *ngFor="let std of standards" [value]="std.value">
+                {{ std.label }}
+              </option>
+
+            </select>
+            <span class="material-icons-round custom-arrow">expand_more</span>
+          </div>
+        </div>
+
+        <div class="premium-search" [class.disabled]="!selectedGrade">
+          <span class="material-icons-round search-icon">search</span>
+          <input type="text" placeholder="Search student..." [(ngModel)]="searchText" (input)="onFilterChange()"
+            [disabled]="!selectedGrade">
+        </div>
+
+      </div>
+      <div class="toolbar-right">
+        <button class="btn-primary fee-action-btn success" style="padding: 10px 20px; font-size: 14px;"
+          (click)="openStudentSearchModal()">
+          <span class="material-icons-round">person_search</span> Quick Collect
+        </button>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="pro-table">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Amount Paid</th>
+            <th>Mode</th>
+            <th>Date</th>
+            <th class="text-right">Receipt</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="isTableLoading">
+            <td colspan="5" style="padding: 48px; text-align: center;">
+              <span class="material-icons-round"
+                style="font-size: 28px; color: var(--primary-color); animation: spin 1s linear infinite;">
+                autorenew
+              </span>
+              <p style="margin: 8px 0 0; font-size: 13px; color: var(--text-muted);">Loading transactions...</p>
+            </td>
+          </tr>
+          <tr *ngIf="!isTableLoading && !selectedGrade">
+            <td colspan="5" class="empty-state">
+              <span class="material-icons-round empty-icon">domain</span>
+              <p>Select a grade to view payment transactions.</p>
+            </td>
+          </tr>
+
+          <!-- Empty results -->
+          <tr *ngIf="!isTableLoading && selectedGrade && pagedRecords.length === 0">
+            <td colspan="5" class="empty-state">
+              <span class="material-icons-round empty-icon">receipt_long</span>
+              <p>No transactions found.</p>
+            </td>
+          </tr>
+
+
+          <ng-container *ngIf="!isTableLoading">
+            <tr *ngFor="let record of pagedRecords">
+
+              <td>
+                <div class="user-cell">
+                  <div class="user-cell-info">
+                    <span class="user-name">{{ record.studentName }}</span>
+                    <span class="user-subtext">{{ record.srNumber }}</span>
+                  </div>
+                </div>
+              </td>
+              <td class="amount-cell">₹{{ record.totalPaid | number:'1.2-2' }}</td>
+              <td>
+                <span class="badge paid">{{ record.paymentMode }}</span>
+              </td>
+              <td class="text-muted">{{ record.paymentDate | date:'MMM dd, yyyy, h:mm a' }}</td>
+              <td class="text-right">
+                <button class="icon-btn-small action-icon receipt-icon" title="Print Receipt"
+                  (click)="downloadReceipt(record)">
+                  <span class="material-icons-round">receipt_long</span>
+                </button>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-footer" *ngIf="selectedGrade && totalItems > 0">
+      <div class="pagination-info">
+        Showing <strong>{{ startIndex + 1 }}</strong> to <strong>{{ endIndex }}</strong>
+        of <strong>{{ totalItems }}</strong> entries
+      </div>
+      <div class="clean-pagination">
+        <button class="nav-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+          <span class="material-icons-round">arrow_back</span> Prev
+        </button>
+        <div class="page-numbers">
+          <button class="num-btn" *ngFor="let page of pages" [class.active]="currentPage === page"
+            (click)="goToPage(page)">{{ page }}</button>
+        </div>
+        <button class="nav-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+          Next <span class="material-icons-round">arrow_forward</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Side panel backdrop -->
+<div class="panel-backdrop" [class.active]="isSidePanelOpen" (click)="closePanel()"></div>
+
+<!-- Side panel — widened to 600px for the checkout layout -->
+<div class="side-panel" [class.open]="isSidePanelOpen" style="width: 600px;">
+  <div class="panel-header">
+    <div>
+      <h2 style="margin:0;">Record Fee Payment</h2>
+      <p style="margin:2px 0 0;font-size:13px;opacity:0.7;">{{ currentFee.studentName }}</p>
+    </div>
+    <button class="icon-btn-small delete" (click)="closePanel()">
+      <span class="material-icons-round">close</span>
+    </button>
+  </div>
+  <div class="panel-body">
+    <app-fee-checkout *ngIf="currentFee?.id" [studentId]="currentFee.id!" (paymentComplete)="onPaymentSuccess()">
+    </app-fee-checkout>
+  </div>
+</div>
+
+<!-- Student search modal -->
+<div class="panel-backdrop" [class.active]="isSearchModalOpen" (click)="closeStudentSearchModal()"></div>
+
+<div class="search-modal" *ngIf="isSearchModalOpen"
+  style="position:fixed;top:20%;left:50%;transform:translate(-50%,0);background:white;width:90%;max-width:500px;border-radius:12px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);z-index:1002;overflow:hidden;">
+
+  <div
+    style="padding:20px;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;background:#f8fafc;">
+    <h3 style="margin:0;font-size:16px;color:var(--text-main);">Find Student for Payment</h3>
+    <button class="icon-btn-small delete" (click)="closeStudentSearchModal()">
+      <span class="material-icons-round">close</span>
+    </button>
+  </div>
+
+  <div style="padding:20px;">
+    <div class="premium-search" style="width:100%;border:1px solid var(--border-color);margin-bottom:16px;">
+      <span class="material-icons-round search-icon">search</span>
+      <input type="text" placeholder="Search by name or SR Number..." [(ngModel)]="studentSearchQuery"
+        (ngModelChange)="searchMasterStudents()" autofocus>
+    </div>
+
+    <div style="max-height:300px;overflow-y:auto;">
+      <div *ngIf="studentSearchResults.length === 0 && studentSearchQuery.length >= 2"
+        style="text-align:center;color:var(--text-muted);padding:20px;">
+        No students found.
+      </div>
+      <div *ngFor="let student of studentSearchResults" (click)="selectStudentForPayment(student)"
+        style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid #f1f5f9;cursor:pointer;"
+        onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
+        <div>
+          <div style="font-weight:600;color:var(--text-main);">{{ student.name }}</div>
+          <div style="font-size:12px;color:var(--text-muted);">{{ student.srNumber }} • Grade {{ student.standard }}
+          </div>
+        </div>
+        <span class="material-icons-round" style="color:var(--primary-color);">chevron_right</span>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,1 @@
+export const ACADEMIC_YEAR = "2025-26"
