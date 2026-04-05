@@ -233,7 +233,7 @@ standards: any[] = [
     </tr>
     <tr>
       <td>Class</td>
-      <td>: ${receipt.selectedGrade || "-"}</td>
+      <td>: ${receipt.grade || "-"}</td>
     </tr>
     <tr>
       <td>SR No</td>
