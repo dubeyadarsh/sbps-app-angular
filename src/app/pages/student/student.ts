@@ -40,7 +40,7 @@ export class StudentsComponent implements OnInit {
   selectedGrade: string = ''; 
   searchText: string = '';
   currentPage: number = 1;
-  pageSize: number = 5; 
+  pageSize: number = 30; 
   isLoading: boolean = false; 
   
   isSidePanelOpen: boolean = false;
