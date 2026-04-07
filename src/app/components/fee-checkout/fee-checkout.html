@@ -1,82 +1,89 @@
 <div class="checkout-container">
   
-  <div *ngIf="!hasDues()" class="empty-checkout">
+  <div *ngIf="isLoading" class="empty-checkout">
+    <span class="material-icons-round" style="font-size: 40px; color: var(--primary-color); animation: spin 1s linear infinite;">autorenew</span>
+    <p>Loading dues...</p>
+  </div>
+
+  <div *ngIf="!isLoading && !hasDues()" class="empty-checkout">
     <span class="material-icons-round" style="font-size: 40px; color: #cbd5e1;">check_circle</span>
     <p>No pending dues for this student.</p>
   </div>
 
-  <div *ngFor="let key of groupedKeys" class="fee-group">
-    <div class="group-header">
-      <h4 class="group-title">{{ key }}</h4>
-    </div>
-    
-    <table class="checkout-table">
-      <thead>
-        <tr>
-          <th width="50">Pay</th>
-          <th>Month</th>
-          <th>Due Amt</th>
-          <th>Paying Now</th>
-          <th>Concession</th>
-        </tr>
-      </thead>
-      <tbody>
-        <ng-container *ngFor="let due of groupedDues[key]; let i = index">
-          
-          <tr *ngIf="i === 0 || groupedDues[key][i-1].selected">
-            <td>
-              <input type="checkbox" class="large-checkbox" 
-                     [(ngModel)]="due.selected" 
-                     (change)="onDueSelectionChange(groupedDues[key], i)">
-            </td>
-            <td style="font-weight: 600;">{{ formatMonth(due.dueMonth) }}</td>
-            <td style="color: var(--danger-color); font-weight: 600;">₹{{ due.balanceDue }}</td>
-            <td>
-              <input type="number" class="form-control form-control-sm" 
-                     [(ngModel)]="due.payingAmount" 
-                     [disabled]="!due.selected" 
-                     (ngModelChange)="calculateTotals()" 
-                     min="0">
-            </td>
-            <td>
-              <input type="number" class="form-control form-control-sm" 
-                     [(ngModel)]="due.concessionAmount" 
-                     [disabled]="!due.selected" 
-                     (ngModelChange)="calculateTotals()" 
-                     min="0">
-            </td>
-          </tr>
-
-        </ng-container>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="checkout-footer" *ngIf="hasDues()">
-    <div class="payment-mode-section">
-      <label>Mode:</label>
-      <select class="form-control" [(ngModel)]="paymentMode" style="width: 150px;">
-        <option value="CASH">Cash</option>
-        <option value="ONLINE">Online/UPI</option>
-        <option value="CHEQUE">Cheque</option>
-      </select>
-    </div>
-
-    <div class="totals-section">
-      <div class="concession-row" *ngIf="concessionTotal > 0">
-        Discount Applied: <span>₹{{ concessionTotal | number:'1.2-2' }}</span>
-      </div>
-      <div class="net-row">
-        Net Payable: <span class="net-amount">₹{{ netPayable | number:'1.2-2' }}</span>
+  <ng-container *ngIf="!isLoading && hasDues()">
+    <div *ngFor="let key of groupedKeys" class="fee-group">
+      <div class="group-header">
+        <h4 class="group-title">{{ key }}</h4>
       </div>
       
-      <button class="btn-primary pay-btn" 
-              (click)="processPayment()" 
-              [disabled]="isProcessing || (netPayable === 0 && concessionTotal === 0)">
-        <span class="material-icons-round">payment</span>
-        {{ isProcessing ? 'Processing...' : 'Collect Payment' }}
-      </button>
+      <table class="checkout-table">
+        <thead>
+          <tr>
+            <th width="50">Pay</th>
+            <th>Month</th>
+            <th>Due Amt</th>
+            <th>Paying Now</th>
+            <th>Concession</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let due of groupedDues[key]; let i = index">
+            
+            <tr *ngIf="i === 0 || groupedDues[key][i-1].selected">
+              <td>
+                <input type="checkbox" class="large-checkbox" 
+                       [(ngModel)]="due.selected" 
+                       (change)="onDueSelectionChange(groupedDues[key], i)">
+              </td>
+              <td style="font-weight: 600;">{{ formatMonth(due.dueMonth) }}</td>
+              <td style="color: var(--danger-color); font-weight: 600;">₹{{ due.balanceDue }}</td>
+              <td>
+                <input type="number" class="form-control form-control-sm" 
+                       [(ngModel)]="due.payingAmount" 
+                       [disabled]="!due.selected" 
+                       (ngModelChange)="calculateTotals()" 
+                       min="0">
+              </td>
+              <td>
+                <input type="number" class="form-control form-control-sm" 
+                       [(ngModel)]="due.concessionAmount" 
+                       [disabled]="!due.selected" 
+                       (ngModelChange)="calculateTotals()" 
+                       min="0">
+              </td>
+            </tr>
+
+          </ng-container>
+        </tbody>
+      </table>
     </div>
-  </div>
+
+    <div class="checkout-footer">
+      <div class="payment-mode-section">
+        <label>Mode:</label>
+        <select class="form-control" [(ngModel)]="paymentMode" style="width: 150px;">
+          <option value="CASH">Cash</option>
+          <option value="ONLINE">Online/UPI</option>
+          <option value="CHEQUE">Cheque</option>
+        </select>
+      </div>
+
+      <div class="totals-section">
+        <div class="concession-row" *ngIf="concessionTotal > 0">
+          Discount Applied: <span>₹{{ concessionTotal | number:'1.2-2' }}</span>
+        </div>
+        <div class="net-row">
+          Net Payable: <span class="net-amount">₹{{ netPayable | number:'1.2-2' }}</span>
+        </div>
+        
+        <button class="btn-primary pay-btn" 
+                (click)="processPayment()" 
+                [disabled]="isProcessing || (netPayable === 0 && concessionTotal === 0)">
+          <span class="material-icons-round">payment</span>
+          {{ isProcessing ? 'Processing...' : 'Collect Payment' }}
+        </button>
+      </div>
+    </div>
+  </ng-container>
 
 </div>

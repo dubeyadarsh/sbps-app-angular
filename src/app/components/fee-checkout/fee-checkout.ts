@@ -19,6 +19,7 @@ export class FeeCheckoutComponent implements OnInit {
 
   paymentMode = 'CASH';
   isProcessing = false;
+  isLoading = true; // NEW: Added loading state
 
   cartTotal = 0;
   concessionTotal = 0;
@@ -31,25 +32,38 @@ export class FeeCheckoutComponent implements OnInit {
   }
 
   loadDues() {
-    this.api.getPendingDues(this.studentId).subscribe((res: any) => {
-      const pendingDues = res.data.filter((d: any) => d.status !== 'PAID');
-      
-      // Group by Fee Name
-      this.groupedDues = pendingDues.reduce((acc: any, due: any) => {
-        due.selected = false;
-        due.payingAmount = due.balanceDue;
-        due.concessionAmount = 0;
+    this.isLoading = true;
+    this.api.getPendingDues(this.studentId).subscribe({
+      next: (res: any) => {
+        // CRITICAL FIX: Safely extract the array. 
+        // If ApiService already unwrapped it, 'res' is the array. Otherwise, it's 'res.data'.
+        const dataArray = Array.isArray(res) ? res : (res.data || []);
         
-        if (!acc[due.feeTypeName]) acc[due.feeTypeName] = [];
-        acc[due.feeTypeName].push(due);
-        return acc;
-      }, {});
+        const pendingDues = dataArray.filter((d: any) => d.status !== 'PAID');
+        
+        // Group by Fee Name
+        this.groupedDues = pendingDues.reduce((acc: any, due: any) => {
+          due.selected = false;
+          due.payingAmount = due.balanceDue;
+          due.concessionAmount = 0;
+          
+          if (!acc[due.feeTypeName]) acc[due.feeTypeName] = [];
+          acc[due.feeTypeName].push(due);
+          return acc;
+        }, {});
 
-      // Sort each group sequentially by academic month
-      for (const key in this.groupedDues) {
-        this.groupedDues[key].sort((a: any, b: any) => (a.dueMonth || 0) - (b.dueMonth || 0));
+        // Sort each group sequentially by academic month
+        for (const key in this.groupedDues) {
+          this.groupedDues[key].sort((a: any, b: any) => (a.dueMonth || 0) - (b.dueMonth || 0));
+        }
+        
+        this.groupedKeys = Object.keys(this.groupedDues);
+        this.isLoading = false; // Turn off loading
+      },
+      error: (err) => {
+        console.error("Error fetching dues:", err);
+        this.isLoading = false;
       }
-      this.groupedKeys = Object.keys(this.groupedDues);
     });
   }
 
@@ -57,7 +71,6 @@ export class FeeCheckoutComponent implements OnInit {
     const current = group[index];
     
     if (!current.selected) {
-      // If a month is UNCHECKED, forcefully uncheck all subsequent months
       for (let i = index + 1; i < group.length; i++) {
         group[i].selected = false;
         group[i].payingAmount = group[i].balanceDue;
@@ -77,7 +90,6 @@ export class FeeCheckoutComponent implements OnInit {
           let paying = due.payingAmount ? parseFloat(due.payingAmount) : 0;
           let concession = due.concessionAmount ? parseFloat(due.concessionAmount) : 0;
 
-          // Auto-adjust so they don't overpay the balance
           if (paying + concession > due.balanceDue) {
             paying = due.balanceDue - concession;
             if (paying < 0) paying = 0;
