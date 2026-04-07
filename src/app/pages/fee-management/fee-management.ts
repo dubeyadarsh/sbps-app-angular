@@ -31,6 +31,24 @@ export class FeesComponent implements OnInit {
   isSearchModalOpen: boolean = false;
   studentSearchQuery: string = '';
   studentSearchResults: any[] = [];
+  isTableLoading: boolean = false;
+
+  standards: any[] = [
+    { label: 'Grade PG', value: 'PG' },
+    { label: 'Grade LKG', value: 'LKG' },
+    { label: 'Grade UKG', value: 'UKG' },
+    { label: 'Grade 1', value: '1' },
+    { label: 'Grade 2', value: '2' },
+    { label: 'Grade 3', value: '3' },
+    { label: 'Grade 4', value: '4' },
+    { label: 'Grade 5', value: '5' },
+    { label: 'Grade 6', value: '6' },
+    { label: 'Grade 7', value: '7' },
+    { label: 'Grade 8', value: '8' },
+    { label: 'Grade 9', value: '9' },
+    { label: 'Grade 10', value: '10' },
+    { label: 'Grade 11', value: '11' },
+  ];
 
   constructor(
     private feeService: ApiService,
@@ -48,49 +66,32 @@ export class FeesComponent implements OnInit {
 
   fetchReportStats(): void {
     this.feeService.getReportStats(this.selectedGrade).subscribe({
-      next: (res) => { this.reportStats = res.data; this.cdr.detectChanges(); },
+      next: (res: any) => { this.reportStats = res.data; this.cdr.detectChanges(); },
       error: () => {}
     });
   }
 
-  isTableLoading: boolean = false;
+  fetchTableData(): void {
+    this.isTableLoading = true;
+    this.feeService.getFeeTransactions(
+      this.selectedGrade, this.searchText, this.currentPage - 1, this.pageSize
+    ).subscribe({
+      next: (res: any) => {
+        const page = res.data;
+        this.pagedRecords = page.content;
+        this.totalItems = page.totalElements;
+        this.totalPages = page.totalPages;
+        this.isTableLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.notificationService.showError('Failed to load transactions.');
+        this.isTableLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
 
-fetchTableData(): void {
-  this.isTableLoading = true;
-  this.feeService.getFeeTransactions(
-    this.selectedGrade, this.searchText, this.currentPage - 1, this.pageSize
-  ).subscribe({
-    next: (res) => {
-      const page = res.data;
-      this.pagedRecords = page.content;
-      this.totalItems = page.totalElements;
-      this.totalPages = page.totalPages;
-      this.isTableLoading = false;
-      this.cdr.detectChanges();
-    },
-    error: () => {
-      this.notificationService.showError('Failed to load transactions.');
-      this.isTableLoading = false;
-      this.cdr.detectChanges();
-    }
-  });
-}
-standards: any[] = [
-  { label: 'Grade PG', value: 'PG' },
-  { label: 'Grade LKG', value: 'LKG' },
-  { label: 'Grade UKG', value: 'UKG' },
-  { label: 'Grade 1', value: '1' },
-  { label: 'Grade 2', value: '2' },
-  { label: 'Grade 3', value: '3' },
-  { label: 'Grade 4', value: '4' },
-  { label: 'Grade 5', value: '5' },
-  { label: 'Grade 6', value: '6' },
-  { label: 'Grade 7', value: '7' },
-  { label: 'Grade 8', value: '8' },
-  { label: 'Grade 9', value: '9' },
-  { label: 'Grade 10', value: '10' },
-  { label: 'Grade 11', value: '11' },
-];
   onFilterChange(): void {
     this.currentPage = 1;
     this.loadData();
@@ -127,9 +128,8 @@ standards: any[] = [
   }
 
   downloadReceipt(record: any): void {
-    // record.receiptId is the transaction ID
     this.feeService.getReceiptDetails(record.receiptId).subscribe({
-      next: (res) => this.printReceipt(res.data),
+      next: (res: any) => this.printReceipt(res.data),
       error: () => this.notificationService.showError('Could not fetch receipt.')
     });
   }
@@ -138,12 +138,18 @@ standards: any[] = [
     const win = window.open('', '_blank');
     if (!win) return;
 
-    const rows = receipt.lineItems.map((item: any) => `
+    const rows = receipt.lineItems.map((item: any) => {
+      const concessionText = item.concessionAmount > 0 
+        ? `<br><small style="color:gray; font-size:10px;">(Discount: ₹${Number(item.concessionAmount).toFixed(2)})</small>` 
+        : '';
+      
+      return `
       <tr>
-        <td style="padding:8px;border-bottom:1px solid #eee;">${item.feeTypeName}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;">${item.feeTypeName}${concessionText}</td>
         <td style="padding:8px;border-bottom:1px solid #eee;">${item.feeMonth}</td>
         <td style="padding:8px;border-bottom:1px solid #eee;text-align:right;">₹${Number(item.paidAmount).toFixed(2)}</td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
 
     win.document.write(`
 <html>
@@ -151,128 +157,104 @@ standards: any[] = [
   <title>Receipt #${receipt.receiptId}</title>
   <style>
     body {
-    font-family: monospace;
-    width: 300px;
-    margin: auto;
-    padding: 10px;
-    color: #000;
-    font-size: 12px;
-    position: relative;
-  }
-
-  body::before {
-    content: "S.B. PUBLIC SCHOOL";
-    position: fixed;
-    top: 40%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(-30deg);
-    font-size: 20px;
-    color: rgba(0,0,0,0.08);
-    white-space: nowrap;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  body * {
-    position: relative;
-    z-index: 1;
-  }
-
-  .center { text-align: center; }
-  .right { text-align: right; }
-  .bold { font-weight: bold; }
-  .divider {
-    border-top: 1px dashed #000;
-    margin: 8px 0;
-  }
+      font-family: monospace;
+      margin: 0;
+      padding: 20px 0;
+      display: flex;
+      justify-content: center;
+      background: #fff;
+    }
+    /* Scope the relative positioning directly to the receipt box */
+    .receipt-container {
+      width: 300px;
+      position: relative;
+      padding: 10px;
+      color: #000;
+      font-size: 12px;
+      overflow: hidden; /* Ensures watermark doesn't bleed out */
+    }
+    .watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 22px;
+      color: rgba(0,0,0,0.08);
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .content-layer {
+      position: relative;
+      z-index: 1;
+    }
     .center { text-align: center; }
     .right { text-align: right; }
     .bold { font-weight: bold; }
-    .divider {
-      border-top: 1px dashed #000;
-      margin: 8px 0;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    td {
-      padding: 4px 0;
-    }
+    .divider { border-top: 1px dashed #000; margin: 8px 0; }
+    table { width: 100%; border-collapse: collapse; }
+    td { padding: 4px 0; }
   </style>
 </head>
-
 <body>
+  
+  <div class="receipt-container">
+    <div class="watermark">S.B. PUBLIC SCHOOL</div>
+    
+    <div class="content-layer">
+      <div class="center bold" style="font-size:14px;">S. B. PUBLIC SCHOOL</div>
+      <div class="center" style="font-size:11px;">Fee Receipt</div>
 
-  <div class="center bold" style="font-size:14px;">
-    S. B. PUBLIC SCHOOL 
-  </div>
-  <div class="center" style="font-size:11px;">
-    Fee Receipt
-  </div>
+      <div class="divider"></div>
 
-  <div class="divider"></div>
+      <div>
+        <div><span class="bold">Receipt:</span> #${receipt.receiptId}</div>
+        <div><span class="bold">Date:</span> ${new Date(receipt.paymentDate).toLocaleDateString('en-IN')}</div>
+        <div><span class="bold">Mode:</span> ${receipt.paymentMode}</div>
+      </div>
 
-  <div>
-    <div><span class="bold">Receipt:</span> #${receipt.receiptId}</div>
-    <div><span class="bold">Date:</span> ${new Date(receipt.paymentDate).toLocaleDateString('en-IN')}</div>
-    <div><span class="bold">Mode:</span> ${receipt.paymentMode}</div>
-  </div>
+      <div class="divider"></div>
 
-  <div class="divider"></div>
+      <div>
+        <table>
+          <tr><td class="bold">Student</td><td>: ${receipt.studentName}</td></tr>
+          <tr><td>Father</td><td>: ${receipt.fatherName}</td></tr>
+          <tr><td>Class</td><td>: ${receipt.grade || "-"}</td></tr>
+          <tr><td>SR No</td><td>: ${receipt.srNumber || "-"}</td></tr>
+        </table>
+      </div>
 
-<div>
-  <table>
-    <tr>
-      <td class="bold">Student</td>
-      <td>: ${receipt.studentName}</td>
-    </tr>
-    <tr>
-      <td>Father</td>
-      <td>: ${receipt.fatherName}</td>
-    </tr>
-    <tr>
-      <td>Class</td>
-      <td>: ${receipt.grade || "-"}</td>
-    </tr>
-    <tr>
-      <td>SR No</td>
-      <td>: ${receipt.srNumber || "-"}</td>
-    </tr>
-  </table>
-</div>
+      <div class="divider"></div>
 
-  <div class="divider"></div>
+      <table>
+        <thead>
+          <tr class="bold">
+            <td>Fee</td>
+            <td>Month</td>
+            <td class="right">Amt</td>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
 
-  <table>
-    <thead>
-      <tr class="bold">
-        <td>Fee</td>
-        <td>Month</td>
-        <td class="right">Amt</td>
-      </tr>
-    </thead>
-    <tbody>
-      ${receipt.lineItems.map((item: any) => `
-        <tr>
-          <td>${item.feeTypeName}</td>
-          <td>${item.feeMonth}</td>
-          <td class="right">₹${Number(item.paidAmount).toFixed(2)}</td>
-        </tr>
-      `).join('')}
-    </tbody>
-  </table>
+      <div class="divider"></div>
 
-  <div class="divider"></div>
+      <div class="right bold" style="font-size: 14px;">
+        Total Paid: ₹${Number(receipt.totalPaid).toFixed(2)}
+      </div>
+      ${receipt.totalConcession > 0 ? `
+      <div class="right" style="font-size: 11px; color: #555; margin-top: 4px;">
+        Total Discount Applied: ₹${Number(receipt.totalConcession).toFixed(2)}
+      </div>` : ''}
 
-  <div class="right bold">
-    Total: ₹${Number(receipt.totalPaid).toFixed(2)}
-  </div>
+      <div class="divider"></div>
 
-  <div class="divider"></div>
-
-  <div class="center" style="font-size:10px;">
-    Thank You!
+      <div class="center" style="font-size:10px;">
+        Thank You!
+      </div>
+    </div>
   </div>
 
 </body>
@@ -301,7 +283,7 @@ standards: any[] = [
       return;
     }
     this.feeService.searchStudents(this.studentSearchQuery).subscribe({
-      next: (res) => { this.studentSearchResults = res.data.content; },
+      next: (res: any) => { this.studentSearchResults = res.data.content; },
       error: () => this.notificationService.showError('Search failed.')
     });
   }

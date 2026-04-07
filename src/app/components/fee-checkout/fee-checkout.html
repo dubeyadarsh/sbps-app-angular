@@ -1,98 +1,82 @@
-<div class="checkout-wrapper" *ngIf="!isLoading">
-
-  <!-- Optional facility assign strip (only shown when unassigned optional fees exist) -->
-  <div class="assign-strip" *ngIf="availableFacilities.length > 0">
-    <select [(ngModel)]="selectedFacility" [disabled]="isAssigning" class="assign-select">
-      <option value="">Add optional facility...</option>
-      <option *ngFor="let f of availableFacilities" [value]="f.id">{{ f.name }}</option>
-    </select>
-    <button (click)="assignFacility()"
-            [disabled]="!selectedFacility || isAssigning"
-            class="assign-btn"
-            [class.loading]="isAssigning">
-      <span class="material-icons-round" *ngIf="isAssigning" style="font-size:16px;animation:spin 1s linear infinite;">autorenew</span>
-      <span *ngIf="!isAssigning">Assign</span>
-      <span *ngIf="isAssigning">Adding...</span>
-    </button>
+<div class="checkout-container">
+  
+  <div *ngIf="!hasDues()" class="empty-checkout">
+    <span class="material-icons-round" style="font-size: 40px; color: #cbd5e1;">check_circle</span>
+    <p>No pending dues for this student.</p>
   </div>
 
-  <!-- Empty state -->
-  <div *ngIf="oneTimeFees.length === 0 && recurringGroups.length === 0" class="empty-dues">
-    <span class="material-icons-round" style="font-size:40px;color:#d0d5dd;">check_circle_outline</span>
-    <p>No dues found for this student.</p>
+  <div *ngFor="let key of groupedKeys" class="fee-group">
+    <div class="group-header">
+      <h4 class="group-title">{{ key }}</h4>
+    </div>
+    
+    <table class="checkout-table">
+      <thead>
+        <tr>
+          <th width="50">Pay</th>
+          <th>Month</th>
+          <th>Due Amt</th>
+          <th>Paying Now</th>
+          <th>Concession</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let due of groupedDues[key]; let i = index">
+          
+          <tr *ngIf="i === 0 || groupedDues[key][i-1].selected">
+            <td>
+              <input type="checkbox" class="large-checkbox" 
+                     [(ngModel)]="due.selected" 
+                     (change)="onDueSelectionChange(groupedDues[key], i)">
+            </td>
+            <td style="font-weight: 600;">{{ formatMonth(due.dueMonth) }}</td>
+            <td style="color: var(--danger-color); font-weight: 600;">₹{{ due.balanceDue }}</td>
+            <td>
+              <input type="number" class="form-control form-control-sm" 
+                     [(ngModel)]="due.payingAmount" 
+                     [disabled]="!due.selected" 
+                     (ngModelChange)="calculateTotals()" 
+                     min="0">
+            </td>
+            <td>
+              <input type="number" class="form-control form-control-sm" 
+                     [(ngModel)]="due.concessionAmount" 
+                     [disabled]="!due.selected" 
+                     (ngModelChange)="calculateTotals()" 
+                     min="0">
+            </td>
+          </tr>
+
+        </ng-container>
+      </tbody>
+    </table>
   </div>
 
-  <!-- ONE-TIME FEES SECTION -->
-  <div *ngIf="oneTimeFees.length > 0" class="fee-section">
-    <div class="section-label">
-      <span class="material-icons-round" style="font-size:14px;">receipt</span> One-time fees
-    </div>
-    <div class="onetime-list">
-      <div *ngFor="let due of oneTimeFees" class="onetime-row" [class.is-paid]="due.status === 'PAID'">
-        <div class="onetime-name">{{ due.feeTypeName }}</div>
-        <div class="onetime-right">
-          <span class="amount-text">₹{{ due.totalAmount | number:'1.0-0' }}</span>
-          <span *ngIf="due.status === 'PAID'" class="badge paid">Paid</span>
-          <label *ngIf="due.status !== 'PAID'" class="check-label">
-            <input type="checkbox"
-                   [(ngModel)]="due.selected"
-                   (ngModelChange)="recalculateTotal()"
-                   class="fee-checkbox">
-            <span class="badge pending">Select</span>
-          </label>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- RECURRING FEES SECTION — one card per fee type -->
-  <div *ngFor="let group of recurringGroups" class="fee-section">
-    <div class="section-label">
-      <span class="material-icons-round" style="font-size:14px;">repeat</span>
-      {{ group.feeTypeName }}
-      <span class="month-summary">
-        {{ group.paidCount }}/{{ group.months.length }} paid
-      </span>
-    </div>
-    <div class="month-grid">
-      <div *ngFor="let due of group.months; let i = index"
-           class="month-chip"
-           [class.chip-paid]="due.status === 'PAID'"
-           [class.chip-selected]="due.selected"
-           [class.chip-locked]="isPreviousMonthUnpaid(group.months, i)"
-           (click)="toggleMonth(due, group.months, i)">
-        <span class="chip-month">{{ getMonthName(due.dueMonth) }}</span>
-        <span class="chip-amount">₹{{ due.balanceDue | number:'1.0-0' }}</span>
-        <span class="material-icons-round chip-icon" *ngIf="due.status === 'PAID'">check</span>
-        <span class="material-icons-round chip-icon" *ngIf="due.selected && due.status !== 'PAID'">check_box</span>
-        <span class="material-icons-round chip-icon" *ngIf="isPreviousMonthUnpaid(group.months, i)">lock</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- FOOTER -->
-  <div class="checkout-footer" *ngIf="oneTimeFees.length > 0 || recurringGroups.length > 0">
-    <div class="total-row">
-      <span>Total selected</span>
-      <strong class="total-amount">₹{{ grandTotal | number:'1.0-0' }}</strong>
-    </div>
-    <div class="footer-actions">
-      <select [(ngModel)]="paymentMode" class="mode-select">
+  <div class="checkout-footer" *ngIf="hasDues()">
+    <div class="payment-mode-section">
+      <label>Mode:</label>
+      <select class="form-control" [(ngModel)]="paymentMode" style="width: 150px;">
         <option value="CASH">Cash</option>
-        <option value="UPI">UPI</option>
-        <option value="BANK_TRANSFER">Bank Transfer</option>
+        <option value="ONLINE">Online/UPI</option>
+        <option value="CHEQUE">Cheque</option>
       </select>
-      <button class="btn-pay" [disabled]="grandTotal === 0 || isSubmitting" (click)="submitPayment()">
-        <span class="material-icons-round" *ngIf="isSubmitting" style="font-size:16px;animation:spin 1s linear infinite;">autorenew</span>
-        <span *ngIf="!isSubmitting">Process ₹{{ grandTotal | number:'1.0-0' }}</span>
-        <span *ngIf="isSubmitting">Processing...</span>
+    </div>
+
+    <div class="totals-section">
+      <div class="concession-row" *ngIf="concessionTotal > 0">
+        Discount Applied: <span>₹{{ concessionTotal | number:'1.2-2' }}</span>
+      </div>
+      <div class="net-row">
+        Net Payable: <span class="net-amount">₹{{ netPayable | number:'1.2-2' }}</span>
+      </div>
+      
+      <button class="btn-primary pay-btn" 
+              (click)="processPayment()" 
+              [disabled]="isProcessing || (netPayable === 0 && concessionTotal === 0)">
+        <span class="material-icons-round">payment</span>
+        {{ isProcessing ? 'Processing...' : 'Collect Payment' }}
       </button>
     </div>
   </div>
 
-</div>
-
-<div *ngIf="isLoading" class="loading-state">
-  <span class="material-icons-round" style="animation:spin 1s linear infinite;font-size:28px;">autorenew</span>
-  <p>Loading ledger...</p>
 </div>

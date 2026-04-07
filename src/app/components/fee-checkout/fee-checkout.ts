@@ -1,8 +1,7 @@
-import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api-service';
-import { NotificationService } from '../../services/notification';
 
 @Component({
   selector: 'app-fee-checkout',
@@ -12,160 +11,129 @@ import { NotificationService } from '../../services/notification';
   styleUrls: ['./fee-checkout.css']
 })
 export class FeeCheckoutComponent implements OnInit {
-
   @Input() studentId!: number;
   @Output() paymentComplete = new EventEmitter<void>();
 
-  // Separated view models
-  oneTimeFees: any[] = [];
-  recurringGroups: any[] = [];
+  groupedDues: { [key: string]: any[] } = {};
+  groupedKeys: string[] = [];
 
-  grandTotal: number = 0;
-  paymentMode: string = 'CASH';
-  isLoading: boolean = true;
-  isAssigning: boolean = false;
-  isSubmitting: boolean = false;
+  paymentMode = 'CASH';
+  isProcessing = false;
 
-  availableFacilities: any[] = [];
-  selectedFacility: string = '';
+  cartTotal = 0;
+  concessionTotal = 0;
+  netPayable = 0;
 
-  private readonly MONTHS = [
-    'Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'
-  ];
+  constructor(private api: ApiService) {}
 
-  constructor(
-    private api: ApiService,
-    private notify: NotificationService,
-    private cdr: ChangeDetectorRef
-  ) {}
-
-  ngOnInit(): void {
-    if (this.studentId) {
-      this.fetchAvailableFacilities();
-      this.fetchDues();
-    }
+  ngOnInit() {
+    this.loadDues();
   }
 
-  fetchAvailableFacilities(): void {
-    this.api.getAvailableFacilities(this.studentId).subscribe({
-      next: (res) => { this.availableFacilities = res.data || []; this.cdr.detectChanges(); },
-      error: () => {}
-    });
-  }
+  loadDues() {
+    this.api.getPendingDues(this.studentId).subscribe((res: any) => {
+      const pendingDues = res.data.filter((d: any) => d.status !== 'PAID');
+      
+      // Group by Fee Name
+      this.groupedDues = pendingDues.reduce((acc: any, due: any) => {
+        due.selected = false;
+        due.payingAmount = due.balanceDue;
+        due.concessionAmount = 0;
+        
+        if (!acc[due.feeTypeName]) acc[due.feeTypeName] = [];
+        acc[due.feeTypeName].push(due);
+        return acc;
+      }, {});
 
-  fetchDues(): void {
-    this.isLoading = true;
-    this.api.getPendingDues(this.studentId).subscribe({
-      next: (res) => {
-        this.buildViewModels(res.data || []);
-        this.recalculateTotal();
-        this.isLoading = false;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.notify.showError('Could not fetch dues.');
-        this.isLoading = false;
-        this.cdr.detectChanges();
+      // Sort each group sequentially by academic month
+      for (const key in this.groupedDues) {
+        this.groupedDues[key].sort((a: any, b: any) => (a.dueMonth || 0) - (b.dueMonth || 0));
       }
+      this.groupedKeys = Object.keys(this.groupedDues);
     });
   }
 
-  private buildViewModels(dues: any[]): void {
-    // Split into one-time and recurring
-    const oneTime = dues.filter(d => !d.isRecurring);
-    const recurring = dues.filter(d => d.isRecurring);
-
-    // One-time: flat list, mark paid ones clearly
-    this.oneTimeFees = oneTime.map(d => ({ ...d, selected: false }));
-
-    // Recurring: group by feeTypeId, sorted by dueMonth
-    const grouped: Record<number, any> = {};
-    for (const due of recurring) {
-      if (!grouped[due.feeTypeId]) {
-        grouped[due.feeTypeId] = {
-          feeTypeId: due.feeTypeId,
-          feeTypeName: due.feeTypeName,
-          months: [],
-          paidCount: 0
-        };
+  onDueSelectionChange(group: any[], index: number) {
+    const current = group[index];
+    
+    if (!current.selected) {
+      // If a month is UNCHECKED, forcefully uncheck all subsequent months
+      for (let i = index + 1; i < group.length; i++) {
+        group[i].selected = false;
+        group[i].payingAmount = group[i].balanceDue;
+        group[i].concessionAmount = 0;
       }
-      grouped[due.feeTypeId].months.push({ ...due, selected: false });
     }
-
-    this.recurringGroups = Object.values(grouped).map((g: any) => {
-      g.months.sort((a: any, b: any) => a.dueMonth - b.dueMonth);
-      g.paidCount = g.months.filter((m: any) => m.status === 'PAID').length;
-      return g;
-    });
+    this.calculateTotals();
   }
 
-  getMonthName(month: number): string {
-    if (!month) return 'One-Time';
-    return this.MONTHS[month - 1] || `Month ${month}`;
+  calculateTotals() {
+    this.cartTotal = 0;
+    this.concessionTotal = 0;
+
+    for (const key in this.groupedDues) {
+      for (const due of this.groupedDues[key]) {
+        if (due.selected) {
+          let paying = due.payingAmount ? parseFloat(due.payingAmount) : 0;
+          let concession = due.concessionAmount ? parseFloat(due.concessionAmount) : 0;
+
+          // Auto-adjust so they don't overpay the balance
+          if (paying + concession > due.balanceDue) {
+            paying = due.balanceDue - concession;
+            if (paying < 0) paying = 0;
+            due.payingAmount = paying;
+          }
+
+          this.cartTotal += paying;
+          this.concessionTotal += concession;
+        }
+      }
+    }
+    this.netPayable = this.cartTotal;
   }
 
-  isPreviousMonthUnpaid(months: any[], index: number): boolean {
-    if (index === 0) return false;
-    const prev = months[index - 1];
-    return prev.status !== 'PAID' && !prev.selected;
-  }
+  processPayment() {
+    if (this.cartTotal <= 0 && this.concessionTotal <= 0) return;
+    this.isProcessing = true;
 
-  toggleMonth(due: any, months: any[], index: number): void {
-    if (due.status === 'PAID') return;
-    if (this.isPreviousMonthUnpaid(months, index)) return;
-    due.selected = !due.selected;
-    this.recalculateTotal();
-  }
-
-  recalculateTotal(): void {
-    let total = 0;
-    this.oneTimeFees.forEach(d => { if (d.selected) total += d.balanceDue; });
-    this.recurringGroups.forEach(g =>
-      g.months.forEach((d: any) => { if (d.selected) total += d.balanceDue; })
-    );
-    this.grandTotal = total;
-    this.cdr.detectChanges();
-  }
-
-  assignFacility(): void {
-    if (!this.selectedFacility || this.isAssigning) return;
-    this.isAssigning = true;
-
-    this.api.assignOptionalFacility(this.studentId, Number(this.selectedFacility)).subscribe({
-      next: () => {
-        this.notify.showSuccess('Facility added to ledger!');
-        this.selectedFacility = '';
-        this.fetchAvailableFacilities();
-        this.fetchDues();
-      },
-      error: (err) => this.notify.showError(err.error?.message || 'Failed to add facility.'),
-      complete: () => { this.isAssigning = false; this.cdr.detectChanges(); }
-    });
-  }
-
-  submitPayment(): void {
     const items: any[] = [];
-    this.oneTimeFees.forEach(d => { if (d.selected) items.push({ dueId: d.id, amount: d.balanceDue }); });
-    this.recurringGroups.forEach(g =>
-      g.months.forEach((d: any) => { if (d.selected) items.push({ dueId: d.id, amount: d.balanceDue }); })
-    );
-
-    if (!items.length) {
-      this.notify.showError('Please select at least one fee.');
-      return;
+    for (const key in this.groupedDues) {
+      for (const due of this.groupedDues[key]) {
+        if (due.selected) {
+          items.push({
+            dueId: due.id,
+            amount: due.payingAmount ? parseFloat(due.payingAmount) : 0,
+            concessionAmount: due.concessionAmount ? parseFloat(due.concessionAmount) : 0
+          });
+        }
+      }
     }
 
-    this.isSubmitting = true;
-    this.api.processPayment({ studentId: this.studentId, paymentMode: this.paymentMode, items }).subscribe({
+    const payload = {
+      studentId: this.studentId,
+      paymentMode: this.paymentMode,
+      items: items
+    };
+
+    this.api.processPayment(payload).subscribe({
       next: () => {
-        this.notify.showSuccess('Payment processed!');
+        this.isProcessing = false;
         this.paymentComplete.emit();
       },
-      error: (err) => {
-        this.notify.showError(err.error?.message || 'Payment failed.');
-        this.isSubmitting = false;
-        this.cdr.detectChanges();
+      error: () => {
+        this.isProcessing = false;
+        alert('Payment processing failed. Please check balance.');
       }
     });
+  }
+
+  hasDues(): boolean {
+    return this.groupedKeys.length > 0;
+  }
+
+  formatMonth(m: number): string {
+    if (!m) return 'One-Time';
+    const months = ["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+    return months[m - 1] || 'Unknown';
   }
 }
