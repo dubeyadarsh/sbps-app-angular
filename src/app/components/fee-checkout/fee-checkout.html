@@ -5,13 +5,29 @@
     <p>Loading dues...</p>
   </div>
 
+  <div *ngIf="!isLoading && availableFacilities.length > 0" style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-bottom: 16px;">
+    <p style="margin: 0 0 12px 0; font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Optional Fees / One-Time Payments</p>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+      
+      <button *ngFor="let fac of availableFacilities" 
+              class="btn-secondary" 
+              style="padding: 6px 16px; font-size: 13px; border-radius: 20px;"
+              (click)="addFacility(fac.id)"
+              [disabled]="isAssigning">
+        <span class="material-icons-round" style="font-size: 16px; color: var(--primary-color);">add_circle</span> 
+        {{ fac.name }}
+      </button>
+
+    </div>
+  </div>
+
   <div *ngIf="!isLoading && !hasDues()" class="empty-checkout">
     <span class="material-icons-round" style="font-size: 40px; color: #cbd5e1;">check_circle</span>
     <p>No pending dues for this student.</p>
   </div>
 
   <ng-container *ngIf="!isLoading && hasDues()">
-    <div *ngFor="let key of groupedKeys" class="fee-group">
+    <div *ngFor="let key of groupedKeys" class="fee-group" style="margin-bottom: 16px;">
       <div class="group-header">
         <h4 class="group-title">{{ key }}</h4>
       </div>
@@ -28,7 +44,6 @@
         </thead>
         <tbody>
           <ng-container *ngFor="let due of groupedDues[key]; let i = index">
-            
             <tr>
               <td>
                 <input type="checkbox" class="large-checkbox" 
@@ -43,23 +58,24 @@
                        [(ngModel)]="due.payingAmount" 
                        [disabled]="!due.selected" 
                        (ngModelChange)="calculateTotals()" 
-                       min="0">
+                       min="0"
+                       placeholder="0">
               </td>
               <td>
                 <input type="number" class="form-control form-control-sm" 
                        [(ngModel)]="due.concessionAmount" 
                        [disabled]="!due.selected" 
                        (ngModelChange)="calculateTotals()" 
-                       min="0">
+                       min="0"
+                       placeholder="0">
               </td>
             </tr>
-
           </ng-container>
         </tbody>
       </table>
     </div>
 
-    <div class="checkout-footer">
+    <div class="checkout-footer" style="margin-top: 24px;">
       <div class="payment-mode-section">
         <label>Mode:</label>
         <select class="form-control" [(ngModel)]="paymentMode" style="width: 150px;">
@@ -73,6 +89,7 @@
         <div class="concession-row" *ngIf="concessionTotal > 0">
           Discount Applied: <span>₹{{ concessionTotal | number:'1.2-2' }}</span>
         </div>
+        
         <div class="net-row">
           Net Payable: <span class="net-amount">₹{{ netPayable | number:'1.2-2' }}</span>
         </div>
