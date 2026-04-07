@@ -12,16 +12,18 @@ import { ApiService } from '../../services/api-service';
 })
 export class FeeCheckoutComponent implements OnInit {
   @Input() studentId!: number;
-  
-  // UPDATED: Now emits a number (Transaction ID)
   @Output() paymentComplete = new EventEmitter<number>();
 
   groupedDues: { [key: string]: any[] } = {};
   groupedKeys: string[] = [];
+  
+  // NEW: Holds optional fees like Admission, Bus, etc.
+  availableFacilities: any[] = []; 
 
   paymentMode = 'CASH';
   isProcessing = false;
   isLoading = true; 
+  isAssigning = false; // Prevents double-clicks when adding a fee
 
   cartTotal = 0;
   concessionTotal = 0;
@@ -37,6 +39,7 @@ export class FeeCheckoutComponent implements OnInit {
     this.isLoading = true;
     this.cdr.detectChanges(); 
 
+    // Fetch pending dues
     this.api.getPendingDues(this.studentId).subscribe({
       next: (res: any) => {
         const dataArray = Array.isArray(res) ? res : (res.data || []);
@@ -57,21 +60,42 @@ export class FeeCheckoutComponent implements OnInit {
         }
         
         this.groupedKeys = Object.keys(this.groupedDues);
-        
         this.isLoading = false; 
         this.cdr.detectChanges(); 
       },
-      error: (err) => {
-        console.error("Error fetching dues:", err);
+      error: () => {
         this.isLoading = false;
         this.cdr.detectChanges();
+      }
+    });
+
+    // NEW: Fetch optional facilities that can be added
+    this.api.getAvailableFacilities(this.studentId).subscribe({
+      next: (res: any) => {
+        this.availableFacilities = Array.isArray(res) ? res : (res.data || []);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // NEW: Method to add an optional fee to the student's ledger
+  addFacility(feeTypeId: number) {
+    this.isAssigning = true;
+    this.api.assignFacility(this.studentId, feeTypeId).subscribe({
+      next: () => {
+        this.isAssigning = false;
+        // Reload everything so the new fee pops up in the checkout table!
+        this.loadDues(); 
+      },
+      error: () => {
+        this.isAssigning = false;
+        alert('Could not add facility.');
       }
     });
   }
 
   onDueSelectionChange(group: any[], index: number) {
     const current = group[index];
-    
     if (!current.selected) {
       for (let i = index + 1; i < group.length; i++) {
         group[i].selected = false;
@@ -136,7 +160,6 @@ export class FeeCheckoutComponent implements OnInit {
       next: (res: any) => {
         this.isProcessing = false;
         this.cdr.detectChanges();
-        // UPDATED: Emit the new transaction ID
         const transactionId = res.data?.id || res.id; 
         this.paymentComplete.emit(transactionId); 
       },
