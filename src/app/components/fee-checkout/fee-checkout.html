@@ -29,10 +29,11 @@
         <tbody>
           <ng-container *ngFor="let due of groupedDues[key]; let i = index">
             
-            <tr *ngIf="i === 0 || groupedDues[key][i-1].selected">
+            <tr>
               <td>
                 <input type="checkbox" class="large-checkbox" 
                        [(ngModel)]="due.selected" 
+                       [disabled]="i > 0 && !groupedDues[key][i-1].selected"
                        (change)="onDueSelectionChange(groupedDues[key], i)">
               </td>
               <td style="font-weight: 600;">{{ formatMonth(due.dueMonth) }}</td>
