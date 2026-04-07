@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api-service';
@@ -19,13 +19,14 @@ export class FeeCheckoutComponent implements OnInit {
 
   paymentMode = 'CASH';
   isProcessing = false;
-  isLoading = true; // NEW: Added loading state
+  isLoading = true; 
 
   cartTotal = 0;
   concessionTotal = 0;
   netPayable = 0;
 
-  constructor(private api: ApiService) {}
+  // INJECTED ChangeDetectorRef HERE
+  constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
     this.loadDues();
@@ -33,15 +34,13 @@ export class FeeCheckoutComponent implements OnInit {
 
   loadDues() {
     this.isLoading = true;
+    this.cdr.detectChanges(); // Force UI to show loader immediately
+
     this.api.getPendingDues(this.studentId).subscribe({
       next: (res: any) => {
-        // CRITICAL FIX: Safely extract the array. 
-        // If ApiService already unwrapped it, 'res' is the array. Otherwise, it's 'res.data'.
         const dataArray = Array.isArray(res) ? res : (res.data || []);
-        
         const pendingDues = dataArray.filter((d: any) => d.status !== 'PAID');
         
-        // Group by Fee Name
         this.groupedDues = pendingDues.reduce((acc: any, due: any) => {
           due.selected = false;
           due.payingAmount = due.balanceDue;
@@ -52,17 +51,21 @@ export class FeeCheckoutComponent implements OnInit {
           return acc;
         }, {});
 
-        // Sort each group sequentially by academic month
         for (const key in this.groupedDues) {
           this.groupedDues[key].sort((a: any, b: any) => (a.dueMonth || 0) - (b.dueMonth || 0));
         }
         
         this.groupedKeys = Object.keys(this.groupedDues);
-        this.isLoading = false; // Turn off loading
+        
+        // TURN OFF LOADER AND FORCE DETECTION
+        this.isLoading = false; 
+        this.cdr.detectChanges(); 
       },
       error: (err) => {
         console.error("Error fetching dues:", err);
+        // TURN OFF LOADER AND FORCE DETECTION ON ERROR
         this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -102,11 +105,16 @@ export class FeeCheckoutComponent implements OnInit {
       }
     }
     this.netPayable = this.cartTotal;
+    
+    // Ensure totals update on the UI immediately
+    this.cdr.detectChanges();
   }
 
   processPayment() {
     if (this.cartTotal <= 0 && this.concessionTotal <= 0) return;
+    
     this.isProcessing = true;
+    this.cdr.detectChanges(); // Update button to 'Processing...'
 
     const items: any[] = [];
     for (const key in this.groupedDues) {
@@ -130,10 +138,12 @@ export class FeeCheckoutComponent implements OnInit {
     this.api.processPayment(payload).subscribe({
       next: () => {
         this.isProcessing = false;
+        this.cdr.detectChanges();
         this.paymentComplete.emit();
       },
       error: () => {
         this.isProcessing = false;
+        this.cdr.detectChanges();
         alert('Payment processing failed. Please check balance.');
       }
     });
