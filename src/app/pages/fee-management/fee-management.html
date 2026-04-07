@@ -36,11 +36,9 @@
           <div class="custom-select-wrapper" [class.active-select]="selectedGrade">
             <select class="premium-select" [(ngModel)]="selectedGrade" (change)="onFilterChange()">
               <option value="">-- Select --</option>
-
               <option *ngFor="let std of standards" [value]="std.value">
                 {{ std.label }}
               </option>
-
             </select>
             <span class="material-icons-round custom-arrow">expand_more</span>
           </div>
@@ -82,6 +80,7 @@
               <p style="margin: 8px 0 0; font-size: 13px; color: var(--text-muted);">Loading transactions...</p>
             </td>
           </tr>
+
           <tr *ngIf="!isTableLoading && !selectedGrade">
             <td colspan="5" class="empty-state">
               <span class="material-icons-round empty-icon">domain</span>
@@ -89,7 +88,6 @@
             </td>
           </tr>
 
-          <!-- Empty results -->
           <tr *ngIf="!isTableLoading && selectedGrade && pagedRecords.length === 0">
             <td colspan="5" class="empty-state">
               <span class="material-icons-round empty-icon">receipt_long</span>
@@ -97,10 +95,8 @@
             </td>
           </tr>
 
-
           <ng-container *ngIf="!isTableLoading">
             <tr *ngFor="let record of pagedRecords">
-
               <td>
                 <div class="user-cell">
                   <div class="user-cell-info">
@@ -147,10 +143,8 @@
   </div>
 </div>
 
-<!-- Side panel backdrop -->
 <div class="panel-backdrop" [class.active]="isSidePanelOpen" (click)="closePanel()"></div>
 
-<!-- Side panel — widened to 600px for the checkout layout -->
 <div class="side-panel" [class.open]="isSidePanelOpen" style="width: 600px;">
   <div class="panel-header">
     <div>
@@ -162,12 +156,12 @@
     </button>
   </div>
   <div class="panel-body">
-    <app-fee-checkout *ngIf="currentFee?.id" [studentId]="currentFee.id!" (paymentComplete)="onPaymentSuccess()">
+    <app-fee-checkout *ngIf="currentFee?.id" [studentId]="currentFee.id!" 
+      (paymentComplete)="onPaymentSuccess($event)">
     </app-fee-checkout>
   </div>
 </div>
 
-<!-- Student search modal -->
 <div class="panel-backdrop" [class.active]="isSearchModalOpen" (click)="closeStudentSearchModal()"></div>
 
 <div class="search-modal" *ngIf="isSearchModalOpen"

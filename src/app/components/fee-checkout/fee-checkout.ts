@@ -12,7 +12,9 @@ import { ApiService } from '../../services/api-service';
 })
 export class FeeCheckoutComponent implements OnInit {
   @Input() studentId!: number;
-  @Output() paymentComplete = new EventEmitter<void>();
+  
+  // UPDATED: Now emits a number (Transaction ID)
+  @Output() paymentComplete = new EventEmitter<number>();
 
   groupedDues: { [key: string]: any[] } = {};
   groupedKeys: string[] = [];
@@ -25,7 +27,6 @@ export class FeeCheckoutComponent implements OnInit {
   concessionTotal = 0;
   netPayable = 0;
 
-  // INJECTED ChangeDetectorRef HERE
   constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
@@ -34,7 +35,7 @@ export class FeeCheckoutComponent implements OnInit {
 
   loadDues() {
     this.isLoading = true;
-    this.cdr.detectChanges(); // Force UI to show loader immediately
+    this.cdr.detectChanges(); 
 
     this.api.getPendingDues(this.studentId).subscribe({
       next: (res: any) => {
@@ -57,13 +58,11 @@ export class FeeCheckoutComponent implements OnInit {
         
         this.groupedKeys = Object.keys(this.groupedDues);
         
-        // TURN OFF LOADER AND FORCE DETECTION
         this.isLoading = false; 
         this.cdr.detectChanges(); 
       },
       error: (err) => {
         console.error("Error fetching dues:", err);
-        // TURN OFF LOADER AND FORCE DETECTION ON ERROR
         this.isLoading = false;
         this.cdr.detectChanges();
       }
@@ -105,8 +104,6 @@ export class FeeCheckoutComponent implements OnInit {
       }
     }
     this.netPayable = this.cartTotal;
-    
-    // Ensure totals update on the UI immediately
     this.cdr.detectChanges();
   }
 
@@ -114,7 +111,7 @@ export class FeeCheckoutComponent implements OnInit {
     if (this.cartTotal <= 0 && this.concessionTotal <= 0) return;
     
     this.isProcessing = true;
-    this.cdr.detectChanges(); // Update button to 'Processing...'
+    this.cdr.detectChanges(); 
 
     const items: any[] = [];
     for (const key in this.groupedDues) {
@@ -136,10 +133,12 @@ export class FeeCheckoutComponent implements OnInit {
     };
 
     this.api.processPayment(payload).subscribe({
-      next: () => {
+      next: (res: any) => {
         this.isProcessing = false;
         this.cdr.detectChanges();
-        this.paymentComplete.emit();
+        // UPDATED: Emit the new transaction ID
+        const transactionId = res.data?.id || res.id; 
+        this.paymentComplete.emit(transactionId); 
       },
       error: () => {
         this.isProcessing = false;

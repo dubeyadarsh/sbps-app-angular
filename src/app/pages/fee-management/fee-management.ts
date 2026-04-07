@@ -122,15 +122,25 @@ export class FeesComponent implements OnInit {
     setTimeout(() => { this.currentFee = {}; this.cdr.detectChanges(); }, 300);
   }
 
-  onPaymentSuccess(): void {
+  // UPDATED: Now receives the transactionId and triggers success flow
+  onPaymentSuccess(transactionId?: number): void {
     this.closePanel();
     this.loadData();
+    
+    // 1. Show Success Message
+    this.notificationService.showSuccess('Payment recorded successfully!');
+    
+    // 2. Automatically download/print the receipt if ID was returned
+    if (transactionId) {
+      // Re-use our existing download logic
+      this.downloadReceipt({ receiptId: transactionId });
+    }
   }
 
   downloadReceipt(record: any): void {
     this.feeService.getReceiptDetails(record.receiptId).subscribe({
       next: (res: any) => this.printReceipt(res.data),
-      error: () => this.notificationService.showError('Could not fetch receipt.')
+      error: () => this.notificationService.showError('Could not fetch receipt details for printing.')
     });
   }
 
@@ -160,34 +170,45 @@ export class FeesComponent implements OnInit {
       font-family: monospace;
       margin: 0;
       padding: 20px 0;
-      display: flex;
-      justify-content: center;
       background: #fff;
     }
-    /* Scope the relative positioning directly to the receipt box */
+    
+    /* Center the receipt container itself horizontally on the page */
     .receipt-container {
       width: 300px;
       position: relative;
+      margin: 0 auto; /* Centers the 300px box on the printed page */
       padding: 10px;
       color: #000;
       font-size: 12px;
-      overflow: hidden; /* Ensures watermark doesn't bleed out */
     }
-    .watermark {
+
+    /* WATERMARK LOGIC: Stretches to the exact height of the content layer, perfectly centering the text */
+    .watermark-layer {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(-30deg);
-      font-size: 22px;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .watermark-text {
+      transform: rotate(-30deg);
+      font-size: 24px;
+      font-weight: bold;
       color: rgba(0,0,0,0.08);
       white-space: nowrap;
-      pointer-events: none;
-      z-index: 0;
     }
+
+    /* Ensures content stays above the watermark */
     .content-layer {
       position: relative;
       z-index: 1;
+      background: transparent;
     }
+
     .center { text-align: center; }
     .right { text-align: right; }
     .bold { font-weight: bold; }
@@ -199,7 +220,10 @@ export class FeesComponent implements OnInit {
 <body>
   
   <div class="receipt-container">
-    <div class="watermark">S.B. PUBLIC SCHOOL</div>
+    
+    <div class="watermark-layer">
+      <div class="watermark-text">S.B. PUBLIC SCHOOL</div>
+    </div>
     
     <div class="content-layer">
       <div class="center bold" style="font-size:14px;">S. B. PUBLIC SCHOOL</div>
@@ -246,7 +270,7 @@ export class FeesComponent implements OnInit {
       </div>
       ${receipt.totalConcession > 0 ? `
       <div class="right" style="font-size: 11px; color: #555; margin-top: 4px;">
-        Total Discount Applied: ₹${Number(receipt.totalConcession).toFixed(2)}
+        Total Discount: ₹${Number(receipt.totalConcession).toFixed(2)}
       </div>` : ''}
 
       <div class="divider"></div>
