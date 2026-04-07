@@ -78,13 +78,14 @@ export class FeeCheckoutComponent implements OnInit {
     });
   }
 
-  // NEW: Method to add an optional fee to the student's ledger
+// NEW: Method to add an optional fee to the student's ledger
   addFacility(feeTypeId: number) {
     this.isAssigning = true;
-    this.api.assignFacility(this.studentId, feeTypeId).subscribe({
+    
+    // 👇 THIS IS THE LINE TO CHANGE 👇
+    this.api.assignOptionalFacility(this.studentId, feeTypeId).subscribe({
       next: () => {
         this.isAssigning = false;
-        // Reload everything so the new fee pops up in the checkout table!
         this.loadDues(); 
       },
       error: () => {
@@ -93,7 +94,6 @@ export class FeeCheckoutComponent implements OnInit {
       }
     });
   }
-
   onDueSelectionChange(group: any[], index: number) {
     const current = group[index];
     if (!current.selected) {
