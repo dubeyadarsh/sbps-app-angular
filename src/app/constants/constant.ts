@@ -1,4 +1,4 @@
- export const baseApiUrl = "https://sbps-app-backend.onrender.com";
+ export const baseApiUrl = "https://sbps-app-backend.onrender.com/";
 
  export const STANDARDS: any[] = [
   { label: 'Grade PG', value: 'PG' },
