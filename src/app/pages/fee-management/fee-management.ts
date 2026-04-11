@@ -311,4 +311,19 @@ export class FeesComponent implements OnInit {
       error: () => this.notificationService.showError('Search failed.')
     });
   }
+  deleteReceipt(record: any): void {
+  const confirmDelete = window.confirm(`Are you sure you want to delete Receipt #${record.receiptId}? This will reverse the payment and restore the student's pending dues.`);
+  
+  if (confirmDelete) {
+    this.feeService.deleteTransaction(record.receiptId).subscribe({
+      next: () => {
+        this.notificationService.showSuccess('Receipt deleted and dues reverted successfully.');
+        this.loadData(); // Refresh the table and stats
+      },
+      error: (err) => {
+        this.notificationService.showError('Failed to delete the receipt.');
+      }
+    });
+  }
+}
 }

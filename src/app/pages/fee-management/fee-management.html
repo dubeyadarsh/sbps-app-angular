@@ -110,12 +110,16 @@
                 <span class="badge paid">{{ record.paymentMode }}</span>
               </td>
               <td class="text-muted">{{ record.paymentDate | date:'MMM dd, yyyy, h:mm a' }}</td>
-              <td class="text-right">
-                <button class="icon-btn-small action-icon receipt-icon" title="Print Receipt"
-                  (click)="downloadReceipt(record)">
-                  <span class="material-icons-round">receipt_long</span>
-                </button>
-              </td>
+             <td class="text-right" style="display: flex; gap: 8px; justify-content: flex-end;">
+  <button class="icon-btn-small action-icon receipt-icon" title="Print Receipt"
+    (click)="downloadReceipt(record)">
+    <span class="material-icons-round">receipt_long</span>
+  </button>
+  <button class="icon-btn-small action-icon danger-icon" title="Delete Receipt" style="color: var(--danger-color);"
+    (click)="deleteReceipt(record)">
+    <span class="material-icons-round">delete_outline</span>
+  </button>
+</td>
             </tr>
           </ng-container>
         </tbody>

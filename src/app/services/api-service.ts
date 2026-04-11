@@ -262,4 +262,7 @@ assignTransportRoute(studentId: number, routeId: number, months: number) {
     months
   });
 }
+deleteTransaction(transactionId: number) {
+  return this.http.delete(`${this.apiUrl}api/fees/transaction/${transactionId}`);
+}
 }
