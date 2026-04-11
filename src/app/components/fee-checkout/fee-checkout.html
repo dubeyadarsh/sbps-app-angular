@@ -8,7 +8,6 @@
   <div *ngIf="!isLoading && availableFacilities.length > 0" style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-bottom: 16px;">
     <p style="margin: 0 0 12px 0; font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Optional Fees / One-Time Payments</p>
     <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-      
       <button *ngFor="let fac of availableFacilities" 
               class="btn-secondary" 
               style="padding: 6px 16px; font-size: 13px; border-radius: 20px;"
@@ -17,16 +16,41 @@
         <span class="material-icons-round" style="font-size: 16px; color: var(--primary-color);">add_circle</span> 
         {{ fac.name }}
       </button>
-
     </div>
   </div>
 
-  <div *ngIf="!isLoading && !hasDues()" class="empty-checkout">
+  <div *ngIf="!isLoading && transportRoutes.length > 0" style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-bottom: 16px;">
+    <p style="margin: 0 0 12px 0; font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Include Transport Fee</p>
+    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+      
+      <select class="form-control form-control-sm" 
+              [(ngModel)]="selectedRouteId" 
+              (ngModelChange)="calculateTotals()"
+              style="min-width: 250px;">
+        <option [ngValue]="null">-- Select Transport Route --</option>
+        <option *ngFor="let route of transportRoutes" [ngValue]="route.id">
+          {{ route.locationName }} (₹{{ route.monthlyFee }}/mo)
+        </option>
+      </select>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <label style="margin:0; font-size: 13px; font-weight: 600;">Months:</label>
+        <input type="number" class="form-control form-control-sm" 
+               [(ngModel)]="transportMonths" 
+               (ngModelChange)="calculateTotals()"
+               min="1" max="12" 
+               [disabled]="!selectedRouteId"
+               style="width: 70px; text-align: center;">
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!isLoading && !hasDues() && !selectedRouteId" class="empty-checkout">
     <span class="material-icons-round" style="font-size: 40px; color: #cbd5e1;">check_circle</span>
     <p>No pending dues for this student.</p>
   </div>
 
-  <ng-container *ngIf="!isLoading && hasDues()">
+  <ng-container *ngIf="!isLoading && (hasDues() || selectedRouteId)">
     <div *ngFor="let key of groupedKeys" class="fee-group" style="margin-bottom: 16px;">
       <div class="group-header">
         <h4 class="group-title">{{ key }}</h4>
@@ -88,6 +112,10 @@
       <div class="totals-section">
         <div class="concession-row" *ngIf="concessionTotal > 0">
           Discount Applied: <span>₹{{ concessionTotal | number:'1.2-2' }}</span>
+        </div>
+        
+        <div class="net-row" *ngIf="getTransportTotal() > 0" style="color: var(--primary-color); font-size: 14px; margin-bottom: 4px;">
+          Transport Add-on: <span>+ ₹{{ getTransportTotal() | number:'1.2-2' }}</span>
         </div>
         
         <div class="net-row">

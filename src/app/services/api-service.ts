@@ -248,4 +248,18 @@ uploadStudentPhoto(studentId: number, file: File) {
   getSubjectsByGrade(grade: string) {
     return this.http.get<any[]>(`${this.apiUrl}api/exams/subjects-by-grade?grade=${grade}`);
   }
+  // Add this to fetch the list of routes for the dropdown
+getTransportRoutes() {
+  return this.http.get(`${this.apiUrl}api/transport-routes`);
+}
+
+// Add this to tell the backend to generate the dues based on the route and months selected
+assignTransportRoute(studentId: number, routeId: number, months: number) {
+  // Assuming you create a POST endpoint for this on the backend
+  return this.http.post(`${this.apiUrl}api/fees/assign-transport`, {
+    studentId,
+    routeId,
+    months
+  });
+}
 }

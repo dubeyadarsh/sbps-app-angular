@@ -17,29 +17,43 @@ export class FeeCheckoutComponent implements OnInit {
   groupedDues: { [key: string]: any[] } = {};
   groupedKeys: string[] = [];
   
-  // NEW: Holds optional fees like Admission, Bus, etc.
   availableFacilities: any[] = []; 
+  transportRoutes: any[] = [];
+  
+  // Transport Model
+  selectedRouteId: number | null = null;
+  transportMonths: number = 1;
 
   paymentMode = 'CASH';
   isProcessing = false;
   isLoading = true; 
-  isAssigning = false; // Prevents double-clicks when adding a fee
+  isAssigning = false; 
 
   cartTotal = 0;
   concessionTotal = 0;
   netPayable = 0;
-
+isCustomAmount = false;
+  customAmount: number | null = null;
   constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
     this.loadDues();
+    this.loadTransportRoutes();
+  }
+
+  loadTransportRoutes() {
+    this.api.getTransportRoutes().subscribe({
+      next: (res: any) => {
+        this.transportRoutes = Array.isArray(res) ? res : (res.data || []);
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   loadDues() {
     this.isLoading = true;
     this.cdr.detectChanges(); 
 
-    // Fetch pending dues
     this.api.getPendingDues(this.studentId).subscribe({
       next: (res: any) => {
         const dataArray = Array.isArray(res) ? res : (res.data || []);
@@ -49,7 +63,6 @@ export class FeeCheckoutComponent implements OnInit {
           due.selected = false;
           due.payingAmount = due.balanceDue;
           due.concessionAmount = 0;
-          
           if (!acc[due.feeTypeName]) acc[due.feeTypeName] = [];
           acc[due.feeTypeName].push(due);
           return acc;
@@ -69,7 +82,6 @@ export class FeeCheckoutComponent implements OnInit {
       }
     });
 
-    // NEW: Fetch optional facilities that can be added
     this.api.getAvailableFacilities(this.studentId).subscribe({
       next: (res: any) => {
         this.availableFacilities = Array.isArray(res) ? res : (res.data || []);
@@ -78,11 +90,8 @@ export class FeeCheckoutComponent implements OnInit {
     });
   }
 
-// NEW: Method to add an optional fee to the student's ledger
   addFacility(feeTypeId: number) {
     this.isAssigning = true;
-    
-    // 👇 THIS IS THE LINE TO CHANGE 👇
     this.api.assignOptionalFacility(this.studentId, feeTypeId).subscribe({
       next: () => {
         this.isAssigning = false;
@@ -94,6 +103,7 @@ export class FeeCheckoutComponent implements OnInit {
       }
     });
   }
+
   onDueSelectionChange(group: any[], index: number) {
     const current = group[index];
     if (!current.selected) {
@@ -104,6 +114,13 @@ export class FeeCheckoutComponent implements OnInit {
       }
     }
     this.calculateTotals();
+  }
+
+  // NEW: Helper to get transport amount on the fly
+  getTransportTotal(): number {
+    if (!this.selectedRouteId || this.transportMonths < 1) return 0;
+    const route = this.transportRoutes.find(r => r.id === this.selectedRouteId);
+    return route ? (route.monthlyFee * this.transportMonths) : 0;
   }
 
   calculateTotals() {
@@ -127,12 +144,14 @@ export class FeeCheckoutComponent implements OnInit {
         }
       }
     }
-    this.netPayable = this.cartTotal;
+    
+    // UPDATED: Net Payable now includes the dynamic transport cost
+    this.netPayable = this.cartTotal + this.getTransportTotal();
     this.cdr.detectChanges();
   }
 
   processPayment() {
-    if (this.cartTotal <= 0 && this.concessionTotal <= 0) return;
+    if (this.netPayable <= 0 && this.concessionTotal <= 0) return;
     
     this.isProcessing = true;
     this.cdr.detectChanges(); 
@@ -150,10 +169,16 @@ export class FeeCheckoutComponent implements OnInit {
       }
     }
 
+    // UPDATED: Payload now sends the transport details directly 
     const payload = {
       studentId: this.studentId,
       paymentMode: this.paymentMode,
-      items: items
+      items: items,
+      transportData: this.selectedRouteId ? {
+        routeId: this.selectedRouteId,
+        months: this.transportMonths,
+        totalAmount: this.getTransportTotal()
+      } : null
     };
 
     this.api.processPayment(payload).subscribe({
@@ -179,5 +204,55 @@ export class FeeCheckoutComponent implements OnInit {
     if (!m) return 'One-Time';
     const months = ["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
     return months[m - 1] || 'Unknown';
+  }
+  onCustomAmountToggle() {
+    if (!this.isCustomAmount) {
+      this.customAmount = null;
+      // Reset everything back to full amounts
+      for (const key in this.groupedDues) {
+        for (const due of this.groupedDues[key]) {
+          if (due.selected) { due.payingAmount = due.balanceDue; }
+        }
+      }
+      this.calculateTotals();
+    } else {
+      this.customAmount = this.netPayable;
+      this.distributeCustomAmount();
+    }
+  }
+
+  distributeCustomAmount() {
+    if (!this.isCustomAmount || this.customAmount === null) return;
+
+    let remaining = this.customAmount;
+    this.cartTotal = 0;
+    this.concessionTotal = 0;
+
+    // Collect all selected rows
+    let selectedDues: any[] = [];
+    for (const key of this.groupedKeys) {
+      selectedDues.push(...this.groupedDues[key].filter((d: any) => d.selected));
+    }
+
+    // Distribute the custom amount down the list
+    for (let due of selectedDues) {
+      let maxPayable = due.balanceDue - (due.concessionAmount ? parseFloat(due.concessionAmount) : 0);
+
+      if (remaining >= maxPayable) {
+        due.payingAmount = maxPayable;
+        remaining -= maxPayable;
+      } else if (remaining > 0) {
+        due.payingAmount = remaining;
+        remaining = 0;
+      } else {
+        due.payingAmount = 0;
+      }
+
+      this.cartTotal += due.payingAmount;
+      this.concessionTotal += (due.concessionAmount ? parseFloat(due.concessionAmount) : 0);
+    }
+
+    this.netPayable = this.cartTotal + this.getTransportTotal();
+    this.cdr.detectChanges();
   }
 }
