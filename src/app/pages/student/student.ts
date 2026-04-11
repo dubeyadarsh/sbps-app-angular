@@ -351,4 +351,195 @@ saveStudent(): void {
       reader.readAsDataURL(file);
     }
   }
+ // ==========================================
+  // BULK ID GENERATION (8 Cards per Landscape A4)
+  // OPTIMIZED FOR LARGE BATCHES
+  // ==========================================
+@ViewChild('bulkContainer', { static: false }) bulkContainer!: ElementRef;
+
+showProgressModal: boolean = false;
+progressCurrent: number = 0;
+progressTotal: number = 0;
+progressPercent: number = 0;
+progressCurrentBatch: number = 0;
+progressTotalBatches: number = 0;
+progressCurrentStudent: string = '';
+isGenerating: boolean = false;
+cancelGeneration: boolean = false;
+
+// ==========================================
+// OPTIMIZED BULK ID GENERATION WITH PROGRESS
+// ==========================================
+
+async generateBulkIDs(): Promise<void> {
+  if (!this.allStudents || this.allStudents.length === 0) {
+    this.notificationService.showError("No students found.");
+    return;
+  }
+
+  // Show progress modal
+  this.showProgressModal = true;
+  this.isGenerating = true;
+  this.cancelGeneration = false;
+  this.progressCurrent = 0;
+  this.progressTotal = this.allStudents.length;
+  this.progressPercent = 0;
+  this.cdr.detectChanges();
+
+  // Prepare container
+  const container = document.querySelector('.bulk-print-container') as HTMLElement;
+  if (!container) {
+    this.closeProgressModal();
+    return;
+  }
+
+  container.classList.add('printing-active');
+  
+  // Pre-load all images first
+  await this.preloadAllImages(container);
+  
+  if (this.cancelGeneration) {
+    this.cleanupGeneration(container);
+    return;
+  }
+
+  try {
+    const cardsPerPage = 8;
+    const totalBatches = Math.ceil(this.allStudents.length / cardsPerPage);
+    this.progressTotalBatches = totalBatches;
+    
+    // Process batches one by one with UI updates
+    for (let batch = 0; batch < totalBatches; batch++) {
+      if (this.cancelGeneration) break;
+      
+      this.progressCurrentBatch = batch + 1;
+      this.cdr.detectChanges();
+      
+      await this.generateBatchPDF(batch, cardsPerPage, container);
+      
+      // Small delay between batches for UI to breathe
+      if (batch < totalBatches - 1) {
+        await this.delay(500);
+      }
+    }
+    
+    if (!this.cancelGeneration) {
+      this.notificationService.showSuccess(`Successfully generated ${this.progressTotalBatches} PDF file(s)!`);
+    }
+  } catch (err) {
+    console.error('Generation error:', err);
+    this.notificationService.showError("Generation interrupted. Please try again.");
+  } finally {
+    this.cleanupGeneration(container);
+  }
+}
+
+private async preloadAllImages(container: HTMLElement): Promise<void> {
+  const images = Array.from(container.querySelectorAll('img'));
+  const total = images.length;
+  
+  for (let i = 0; i < images.length; i++) {
+    if (this.cancelGeneration) return;
+    
+    const img = images[i] as HTMLImageElement;
+    if (!img.complete) {
+      await new Promise((resolve) => {
+        img.onload = resolve;
+        img.onerror = resolve;
+      });
+    }
+    
+    // Update progress for image loading
+    this.progressCurrent = i + 1;
+    this.progressPercent = (this.progressCurrent / total) * 30; // 30% for loading
+    this.progressCurrentStudent = `Loading images... (${i + 1}/${total})`;
+    this.cdr.detectChanges();
+    
+    // Small delay to prevent UI freeze
+    if (i % 10 === 0) await this.delay(10);
+  }
+}
+
+private async generateBatchPDF(batchIndex: number, cardsPerPage: number, container: HTMLElement): Promise<void> {
+  const startIdx = batchIndex * cardsPerPage;
+  const endIdx = Math.min(startIdx + cardsPerPage, this.allStudents.length);
+  const pdf = new jsPDF('l', 'mm', 'a4');
+  
+  const cardWidth = 54, cardHeight = 86;
+  const cols = 4, rows = 2;
+  const gapX = 5, gapY = 5;
+  
+  const startX = (297 - ((cols * cardWidth) + (3 * gapX))) / 2;
+  const startY = (210 - ((rows * cardHeight) + (1 * gapY))) / 2;
+  
+  // Process cards in this batch with progress updates
+  for (let i = startIdx; i < endIdx; i++) {
+    if (this.cancelGeneration) return;
+    
+    const element = document.getElementById(`print-card-${i}`);
+    if (!element) continue;
+    
+    // Update progress
+    this.progressCurrent = i + 1;
+    this.progressPercent = 30 + ((this.progressCurrent / this.progressTotal) * 70);
+    this.progressCurrentStudent = this.allStudents[i]?.name || `Student ${i + 1}`;
+    this.cdr.detectChanges();
+    
+    // Yield to browser to prevent freezing
+    await this.delay(1);
+    
+    const canvas = await html2canvas(element, {
+      scale: 1.5,
+      useCORS: true,
+      logging: false,
+      imageTimeout: 0,
+      backgroundColor: '#ffffff',
+      allowTaint: false
+    });
+    
+    const imgData = canvas.toDataURL('image/jpeg', 0.8);
+    const indexOnPage = i - startIdx;
+    const col = indexOnPage % cols;
+    const row = Math.floor(indexOnPage / cols);
+    
+    pdf.addImage(imgData, 'JPEG', 
+      startX + (col * (cardWidth + gapX)), 
+      startY + (row * (cardHeight + gapY)), 
+      cardWidth, cardHeight
+    );
+    
+    // Clean up canvas
+    canvas.width = 0;
+    canvas.height = 0;
+  }
+  
+  // Save PDF
+  const fileName = `ID_Cards_Batch_${batchIndex + 1}_of_${this.progressTotalBatches}.pdf`;
+  pdf.save(fileName);
+  
+  // Allow UI to update after save
+  await this.delay(100);
+}
+
+private delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+private cleanupGeneration(container: HTMLElement): void {
+  container.classList.remove('printing-active');
+  this.isGenerating = false;
+  this.closeProgressModal();
+  this.cdr.detectChanges();
+}
+
+closeProgressModal(): void {
+  this.showProgressModal = false;
+  this.isGenerating = false;
+  this.cancelGeneration = false;
+}
+
+cancelBulkGeneration(): void {
+  this.cancelGeneration = true;
+  this.notificationService.showError("Cancelling generation... Please wait.");
+}
 }

@@ -32,6 +32,18 @@
       </div>
 
       <div class="toolbar-right">
+        <!-- Update your Print button in the toolbar -->
+<button class="btn-primary" 
+        style="background: #3b82f6; position: relative;" 
+        [disabled]="!selectedGrade || allStudents.length === 0 || isGenerating" 
+        (click)="generateBulkIDs()">
+  <span class="material-icons-round" *ngIf="!isGenerating">print</span>
+  <span class="spinner-small" *ngIf="isGenerating"></span>
+  {{ isGenerating ? 'Generating...' : 'Print Class IDs' }}
+  <span class="status-badge" *ngIf="allStudents.length > 0 && !isGenerating" style="background: rgba(255,255,255,0.2); color: white;">
+    {{ allStudents.length }}
+  </span>
+</button>
         <button class="btn-secondary" (click)="downloadTemplate()">
           <span class="material-icons-round">download</span> Template
         </button>
@@ -237,23 +249,38 @@
         <p>Identity Card {{academicYear}}</p>
       </div>
 
-      <div class="id-card-body">
-        <img [src]="generatedStudent.avatar" alt="Student Photo" class="id-photo" crossorigin="anonymous">
+   <div class="id-card-body">
+        
+        <div class="photo-row">
+          <div class="side-info">
+            <span class="red-label">SESSION</span>
+            <span class="black-val">2025 - 26</span>
+          </div>
+          
+          <img [src]="generatedStudent.avatar || defaultAvatar" alt="Student Photo" class="id-photo" crossorigin="anonymous">
+          
+          <div class="side-info">
+            <span class="red-label">S.R. No.</span>
+            <span class="black-val">{{ generatedStudent.srNumber }}</span>
+          </div>
+        </div>
         
         <h2 class="id-name">{{ generatedStudent.name }}</h2>
         <span class="id-grade">Standard: Grade {{ generatedStudent.standard }}</span>
         
         <div class="id-details-grid">
+          <div class="id-row"><span class="id-label">F. Name:</span> <span class="id-val">{{ generatedStudent.fathersName }}</span></div>
           <div class="id-row"><span class="id-label">DOB:</span> <span class="id-val">{{ generatedStudent.dob | date:'dd-MM-yyyy' }}</span></div>
-          <div class="id-row"><span class="id-label">SR No:</span> <span class="id-val">{{ generatedStudent.srNumber }}</span></div>
           <div class="id-row"><span class="id-label">Phone:</span> <span class="id-val">{{ generatedStudent.phoneNumber }}</span></div>
         </div>
       </div>
-
+      
       <div class="id-card-footer">
-        <div class="id-address">{{ generatedStudent.address || 'Address not provided' }}</div>
+        <div class="id-address"><strong>Address:</strong> {{ generatedStudent.address || 'Not provided' }}</div>
         <div class="signature-line">Principal Signature</div>
       </div>
+
+  
       
     </div>
 
@@ -264,5 +291,53 @@
       </button>
     </div>
 
+  </div>
+
+</div>
+<!-- KEEP THIS OUTSIDE ANY *ngIf -->
+<div class="bulk-print-container" #bulkContainer>
+  <div *ngFor="let student of allStudents; let i = index" 
+       [id]="'print-card-' + i" 
+       class="id-card-wrapper">
+
+    <div class="id-card-header">
+      <h4>S.B. PUBLIC SCHOOL</h4>
+      <p>Identity Card {{academicYear}}</p>
+    </div>
+
+  <div class="id-card-body">
+  
+  <div class="id-info-bar">
+    <div class="info-block left">
+      <span class="info-label">SESSION</span>
+      <span class="info-value">2025-26</span>
+    </div>
+    
+    <div class="photo-container">
+      <img [src]="student.avatar || defaultAvatar" class="id-photo" crossorigin="anonymous">
+    </div>
+    
+    <div class="info-block right">
+      <span class="info-label">S.R. NO.</span>
+      <span class="info-value">{{ student.srNumber }}</span>
+    </div>
+  </div>
+
+  <div class="name-section">
+    <h2 class="id-name">{{ student.name }}</h2>
+    <div class="grade-pill">Standard: Grade {{ student.standard }}</div>
+  </div>
+  
+  <div class="id-details-grid">
+    <div class="id-row"><span class="id-label">F. Name:</span> <span class="id-val">{{ student.fathersName || '-' }}</span></div>
+    <div class="id-row"><span class="id-label">DOB:</span> <span class="id-val">{{ student.dob | date:'dd-MM-yyyy' }}</span></div>
+    <div class="id-row"><span class="id-label">Phone:</span> <span class="id-val">{{ student.phoneNumber }}</span></div>
+  </div>
+</div>
+
+    <div class="id-card-footer">
+      <div class="id-address"><strong>Address:</strong> {{ student.address || 'Not provided' }}</div>
+      <div class="signature-line">Principal Signature</div>
+    </div>
   </div>
 </div>
