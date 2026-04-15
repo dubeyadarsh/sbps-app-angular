@@ -12,28 +12,37 @@ import { ApiService } from '../../services/api-service';
 })
 export class FeeCheckoutComponent implements OnInit {
   @Input() studentId!: number;
+  @Input() studentGrade!: string; 
   @Output() paymentComplete = new EventEmitter<number>();
 
   groupedDues: { [key: string]: any[] } = {};
   groupedKeys: string[] = [];
   
-  availableFacilities: any[] = []; 
   transportRoutes: any[] = [];
-  
-  // Transport Model
   selectedRouteId: number | null = null;
-  transportMonths: number = 1;
+  paidFeeMatrix: { [key: number]: number[] } = {};
+
+  // Aligned with the academic year (April = 1, March = 12) to match tuition
+  masterMonths = [
+    { id: 1, name: 'Apr' }, { id: 2, name: 'May' }, { id: 3, name: 'Jun' },
+    { id: 4, name: 'Jul' }, { id: 5, name: 'Aug' }, { id: 6, name: 'Sep' },
+    { id: 7, name: 'Oct' }, { id: 8, name: 'Nov' }, { id: 9, name: 'Dec' },
+    { id: 10, name: 'Jan' }, { id: 11, name: 'Feb' }, { id: 12, name: 'Mar' }
+  ];
+
+  availableTransportMonths: any[] = [];
 
   paymentMode = 'CASH';
   isProcessing = false;
   isLoading = true; 
-  isAssigning = false; 
 
   cartTotal = 0;
   concessionTotal = 0;
   netPayable = 0;
-isCustomAmount = false;
-  customAmount: number | null = null;
+  
+  // NEW: The exact amount the user decides to pay
+  actualPaidAmount: number = 0;
+
   constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
@@ -54,15 +63,22 @@ isCustomAmount = false;
     this.isLoading = true;
     this.cdr.detectChanges(); 
 
-    this.api.getPendingDues(this.studentId).subscribe({
+    this.api.getPendingDues(`${this.studentId}?standard=${this.studentGrade}`).subscribe({
       next: (res: any) => {
-        const dataArray = Array.isArray(res) ? res : (res.data || []);
-        const pendingDues = dataArray.filter((d: any) => d.status !== 'PAID');
+        let pendingDues = [];
+
+        if (res.data && res.data.pendingDues) {
+          pendingDues = res.data.pendingDues;
+          this.paidFeeMatrix = res.data.paidFeeMatrix || {};
+        } else {
+          pendingDues = Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : []);
+        }
         
         this.groupedDues = pendingDues.reduce((acc: any, due: any) => {
           due.selected = false;
           due.payingAmount = due.balanceDue;
           due.concessionAmount = 0;
+          
           if (!acc[due.feeTypeName]) acc[due.feeTypeName] = [];
           acc[due.feeTypeName].push(due);
           return acc;
@@ -73,33 +89,15 @@ isCustomAmount = false;
         }
         
         this.groupedKeys = Object.keys(this.groupedDues);
+        if (this.selectedRouteId) this.onRouteSelect();
+
         this.isLoading = false; 
         this.cdr.detectChanges(); 
       },
       error: () => {
         this.isLoading = false;
         this.cdr.detectChanges();
-      }
-    });
-
-    this.api.getAvailableFacilities(this.studentId).subscribe({
-      next: (res: any) => {
-        this.availableFacilities = Array.isArray(res) ? res : (res.data || []);
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
-  addFacility(feeTypeId: number) {
-    this.isAssigning = true;
-    this.api.assignOptionalFacility(this.studentId, feeTypeId).subscribe({
-      next: () => {
-        this.isAssigning = false;
-        this.loadDues(); 
-      },
-      error: () => {
-        this.isAssigning = false;
-        alert('Could not add facility.');
+        alert('Failed to load dues configuration.');
       }
     });
   }
@@ -116,13 +114,56 @@ isCustomAmount = false;
     this.calculateTotals();
   }
 
-  // NEW: Helper to get transport amount on the fly
-  getTransportTotal(): number {
-    if (!this.selectedRouteId || this.transportMonths < 1) return 0;
-    const route = this.transportRoutes.find(r => r.id === this.selectedRouteId);
-    return route ? (route.monthlyFee * this.transportMonths) : 0;
+  onPayingAmountChange(due: any) {
+    let paying = due.payingAmount ? parseFloat(due.payingAmount) : 0;
+    let concession = due.concessionAmount ? parseFloat(due.concessionAmount) : 0;
+
+    if (paying + concession > due.balanceDue) {
+      paying = due.balanceDue - concession;
+      if (paying < 0) paying = 0;
+      due.payingAmount = paying;
+    }
+    this.calculateTotals();
   }
 
+  onConcessionChange(due: any) {
+    let concession = due.concessionAmount ? parseFloat(due.concessionAmount) : 0;
+    if (concession > due.balanceDue) {
+      concession = due.balanceDue;
+      due.concessionAmount = concession;
+    }
+    due.payingAmount = due.balanceDue - concession;
+    this.calculateTotals();
+  }
+
+  onRouteSelect() {
+    if (this.selectedRouteId) {
+      const route = this.transportRoutes.find(r => r.id === this.selectedRouteId);
+      const paidMonths = (route && route.feeTypeId) ? (this.paidFeeMatrix[route.feeTypeId] || []) : [];
+      
+      this.availableTransportMonths = this.masterMonths
+        .filter(m => !paidMonths.includes(m.id))
+        .map(m => ({ ...m, selected: false }));
+    } else {
+      this.availableTransportMonths = [];
+    }
+    this.calculateTotals();
+  }
+
+  onMonthToggle() {
+    this.calculateTotals();
+  }
+
+  getTransportTotal(): number {
+    if (!this.selectedRouteId) return 0;
+    const route = this.transportRoutes.find(r => r.id === this.selectedRouteId);
+    if (!route) return 0;
+    
+    const selectedCount = this.availableTransportMonths.filter(m => m.selected).length;
+    return route.monthlyFee * selectedCount;
+  }
+
+  // Purely sums up the selected items. No cascading or mutating data.
   calculateTotals() {
     this.cartTotal = 0;
     this.concessionTotal = 0;
@@ -132,53 +173,92 @@ isCustomAmount = false;
         if (due.selected) {
           let paying = due.payingAmount ? parseFloat(due.payingAmount) : 0;
           let concession = due.concessionAmount ? parseFloat(due.concessionAmount) : 0;
-
-          if (paying + concession > due.balanceDue) {
-            paying = due.balanceDue - concession;
-            if (paying < 0) paying = 0;
-            due.payingAmount = paying;
-          }
-
           this.cartTotal += paying;
           this.concessionTotal += concession;
         }
       }
     }
     
-    // UPDATED: Net Payable now includes the dynamic transport cost
     this.netPayable = this.cartTotal + this.getTransportTotal();
+    
+    // Auto-fill the custom paid input to match the total bill by default
+    this.actualPaidAmount = this.netPayable;
+    
     this.cdr.detectChanges();
   }
 
-  processPayment() {
+ processPayment() {
     if (this.netPayable <= 0 && this.concessionTotal <= 0) return;
     
     this.isProcessing = true;
     this.cdr.detectChanges(); 
 
     const items: any[] = [];
+    let totalExpected = 0;   
+
+    // 1. Process standard dues
     for (const key in this.groupedDues) {
       for (const due of this.groupedDues[key]) {
         if (due.selected) {
+          const paying = due.payingAmount ? parseFloat(due.payingAmount) : 0;
+          const concession = due.concessionAmount ? parseFloat(due.concessionAmount) : 0;
+          
+          if (paying === 0 && concession === 0) continue; 
+
+          totalExpected += due.balanceDue;
+
           items.push({
-            dueId: due.id,
-            amount: due.payingAmount ? parseFloat(due.payingAmount) : 0,
-            concessionAmount: due.concessionAmount ? parseFloat(due.concessionAmount) : 0
+            feeTypeId: due.feeTypeId,
+            month: due.dueMonth,
+            amount: paying,
+            concessionAmount: concession
           });
         }
       }
     }
 
-    // UPDATED: Payload now sends the transport details directly 
+    // 2. Process transport dues
+    if (this.selectedRouteId) {
+      const route = this.transportRoutes.find(r => r.id === this.selectedRouteId);
+      if (route) {
+        const selectedMonths = this.availableTransportMonths.filter(m => m.selected);
+        
+        selectedMonths.forEach(m => {
+          let expectedAmt = route.monthlyFee;
+          totalExpected += expectedAmt;
+
+          items.push({
+            feeTypeId: 3, 
+            month: m.id,
+            amount: expectedAmt,
+            concessionAmount: 0
+          });
+        });
+      }
+    }
+
+    // 3. Calculate exact remaining due
+    let finalRemainingDue = this.netPayable - this.actualPaidAmount;
+    if (finalRemainingDue < 0) finalRemainingDue = 0;
+
+    // NO BACKEND AUTOMATION: Push the past remaining due directly into the items array!
+    if (finalRemainingDue > 0) {
+      items.push({
+        feeTypeId: 60002,
+        month: null,
+        amount: finalRemainingDue,
+        concessionAmount: 0
+      });
+    }
+
     const payload = {
       studentId: this.studentId,
       paymentMode: this.paymentMode,
-      items: items,
-      transportData: this.selectedRouteId ? {
-        routeId: this.selectedRouteId,
-        months: this.transportMonths,
-        totalAmount: this.getTransportTotal()
-      } : null
+      totalAmount: totalExpected,
+      paidAmount: this.actualPaidAmount, 
+      discountedAmount: this.concessionTotal,
+      remainingAmount: finalRemainingDue, 
+      items: items // Now includes 60002 if applicable
     };
 
     this.api.processPayment(payload).subscribe({
@@ -204,55 +284,5 @@ isCustomAmount = false;
     if (!m) return 'One-Time';
     const months = ["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
     return months[m - 1] || 'Unknown';
-  }
-  onCustomAmountToggle() {
-    if (!this.isCustomAmount) {
-      this.customAmount = null;
-      // Reset everything back to full amounts
-      for (const key in this.groupedDues) {
-        for (const due of this.groupedDues[key]) {
-          if (due.selected) { due.payingAmount = due.balanceDue; }
-        }
-      }
-      this.calculateTotals();
-    } else {
-      this.customAmount = this.netPayable;
-      this.distributeCustomAmount();
-    }
-  }
-
-  distributeCustomAmount() {
-    if (!this.isCustomAmount || this.customAmount === null) return;
-
-    let remaining = this.customAmount;
-    this.cartTotal = 0;
-    this.concessionTotal = 0;
-
-    // Collect all selected rows
-    let selectedDues: any[] = [];
-    for (const key of this.groupedKeys) {
-      selectedDues.push(...this.groupedDues[key].filter((d: any) => d.selected));
-    }
-
-    // Distribute the custom amount down the list
-    for (let due of selectedDues) {
-      let maxPayable = due.balanceDue - (due.concessionAmount ? parseFloat(due.concessionAmount) : 0);
-
-      if (remaining >= maxPayable) {
-        due.payingAmount = maxPayable;
-        remaining -= maxPayable;
-      } else if (remaining > 0) {
-        due.payingAmount = remaining;
-        remaining = 0;
-      } else {
-        due.payingAmount = 0;
-      }
-
-      this.cartTotal += due.payingAmount;
-      this.concessionTotal += (due.concessionAmount ? parseFloat(due.concessionAmount) : 0);
-    }
-
-    this.netPayable = this.cartTotal + this.getTransportTotal();
-    this.cdr.detectChanges();
   }
 }

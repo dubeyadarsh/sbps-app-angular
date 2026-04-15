@@ -1,70 +1,88 @@
 <div class="page-container">
 
-  <div class="reports-grid" *ngIf="selectedGrade">
-    <div class="report-card primary">
-      <div class="r-icon"><span class="material-icons-round">account_balance</span></div>
-      <div class="r-data"><span>Total Expected</span>
-        <h3>₹{{ reportStats.total | number:'1.2-2' }}</h3>
-      </div>
-    </div>
-    <div class="report-card success">
-      <div class="r-icon"><span class="material-icons-round">task_alt</span></div>
-      <div class="r-data"><span>Total Collected</span>
-        <h3>₹{{ reportStats.collected | number:'1.2-2' }}</h3>
-      </div>
-    </div>
-    <div class="report-card warning">
-      <div class="r-icon"><span class="material-icons-round">pending_actions</span></div>
-      <div class="r-data"><span>Pending</span>
-        <h3>₹{{ reportStats.pending | number:'1.2-2' }}</h3>
-      </div>
-    </div>
-    <div class="report-card danger">
-      <div class="r-icon"><span class="material-icons-round">warning_amber</span></div>
-      <div class="r-data"><span>Overdue</span>
-        <h3>₹{{ reportStats.overdue | number:'1.2-2' }}</h3>
-      </div>
-    </div>
-  </div>
+  
 
   <div class="pro-card">
-    <div class="premium-toolbar">
-      <div class="toolbar-left">
+    
+    <div class="tab-navigation">
+      <div class="tab-item" 
+           [class.active]="activeTab === 'transactions'" 
+           (click)="switchTab('transactions')">
+        Recent Transactions
+      </div>
+      <div class="tab-item" 
+           [class.active]="activeTab === 'duereport'" 
+           (click)="switchTab('duereport')">
+        Class Due Report
+      </div>
+    </div>
 
+    <div class="premium-toolbar toolbar-padded">
+      <div class="toolbar-left">
+        
         <div class="filter-group">
           <label class="filter-label">Grade:</label>
           <div class="custom-select-wrapper" [class.active-select]="selectedGrade">
-            <select class="premium-select" [(ngModel)]="selectedGrade" (change)="onFilterChange()">
+            <select class="premium-select" [(ngModel)]="selectedGrade" (change)="onFilterChange('grade')">
               <option value="">-- Select --</option>
-              <option *ngFor="let std of standards" [value]="std.value">
-                {{ std.label }}
+              <option *ngFor="let std of standards" [value]="std.value">{{ std.label }}</option>
+            </select>
+            <span class="material-icons-round custom-arrow">expand_more</span>
+          </div>
+        </div>
+
+        <div class="filter-group" *ngIf="activeTab === 'transactions'">
+          <label class="filter-label">Student:</label>
+          <div class="custom-select-wrapper" [class.active-select]="selectedStudentFilter !== ''">
+            <select class="premium-select" [(ngModel)]="selectedStudentFilter" (change)="onFilterChange('student')" [disabled]="!selectedGrade">
+              <option value="">-- All Students --</option>
+              <option *ngFor="let student of classStudentsForFilter" [value]="student.id">
+                {{ student.name || student.studentName }} ({{ student.srNumber }})
               </option>
             </select>
             <span class="material-icons-round custom-arrow">expand_more</span>
           </div>
         </div>
 
-        <div class="premium-search" [class.disabled]="!selectedGrade">
-          <span class="material-icons-round search-icon">search</span>
-          <input type="text" placeholder="Search student..." [(ngModel)]="searchText" (input)="onFilterChange()"
-            [disabled]="!selectedGrade">
+        <div class="filter-group" *ngIf="activeTab === 'duereport'">
+          <label class="filter-label">Till Month:</label>
+          <div class="custom-select-wrapper" [class.active-select]="selectedTillMonth">
+            <select class="premium-select" [(ngModel)]="selectedTillMonth" (change)="onFilterChange('month')">
+              <option value="">-- Select Month --</option>
+              <option *ngFor="let m of academicMonths" [value]="m.id">{{ m.name }}</option>
+            </select>
+            <span class="material-icons-round custom-arrow">expand_more</span>
+          </div>
         </div>
 
       </div>
-      <div class="toolbar-right">
-        <button class="btn-primary fee-action-btn success" style="padding: 10px 20px; font-size: 14px;"
-          (click)="openStudentSearchModal()">
-          <span class="material-icons-round">person_search</span> Quick Collect
+      
+      <div class="toolbar-right toolbar-actions">
+        <button *ngIf="activeTab === 'duereport' && dueReports.length > 0" 
+                class="btn-export-pdf"
+                (click)="printDueReport()">
+          <span class="material-icons-round">picture_as_pdf</span> 
+          Export PDF
+        </button>
+
+        <button class="btn-primary fee-action-btn success btn-quick-collect" 
+                (click)="openStudentSearchModal()">
+          <span class="material-icons-round">person_search</span> 
+          Quick Collect
         </button>
       </div>
     </div>
 
-    <div class="table-responsive">
+
+    <div class="table-responsive table-scrollable" *ngIf="activeTab === 'transactions'">
       <table class="pro-table">
-        <thead>
+        <thead class="sticky-header">
           <tr>
             <th>Student</th>
+            <th>Total Bill</th>
+            <th>Discount</th>
             <th>Amount Paid</th>
+            <th>Balance</th>
             <th>Mode</th>
             <th>Date</th>
             <th class="text-right">Receipt</th>
@@ -72,24 +90,21 @@
         </thead>
         <tbody>
           <tr *ngIf="isTableLoading">
-            <td colspan="5" style="padding: 48px; text-align: center;">
-              <span class="material-icons-round"
-                style="font-size: 28px; color: var(--primary-color); animation: spin 1s linear infinite;">
-                autorenew
-              </span>
-              <p style="margin: 8px 0 0; font-size: 13px; color: var(--text-muted);">Loading transactions...</p>
+            <td colspan="8" class="loading-cell">
+              <span class="material-icons-round loading-icon">autorenew</span>
+              <p class="loading-text">Loading transactions...</p>
             </td>
           </tr>
 
           <tr *ngIf="!isTableLoading && !selectedGrade">
-            <td colspan="5" class="empty-state">
+            <td colspan="8" class="empty-state">
               <span class="material-icons-round empty-icon">domain</span>
               <p>Select a grade to view payment transactions.</p>
             </td>
           </tr>
 
           <tr *ngIf="!isTableLoading && selectedGrade && pagedRecords.length === 0">
-            <td colspan="5" class="empty-state">
+            <td colspan="8" class="empty-state">
               <span class="material-icons-round empty-icon">receipt_long</span>
               <p>No transactions found.</p>
             </td>
@@ -105,28 +120,28 @@
                   </div>
                 </div>
               </td>
-              <td class="amount-cell">₹{{ record.totalPaid | number:'1.2-2' }}</td>
-              <td>
-                <span class="badge paid">{{ record.paymentMode }}</span>
+              <td class="amount-cell" style="color: var(--text-muted);">₹{{ record.totalAmount | number:'1.2-2' }}</td>
+              <td style="color: var(--success-color);">₹{{ record.discountedAmount | number:'1.2-2' }}</td>
+              <td class="amount-cell" style="font-weight: bold; color: var(--primary-color);">₹{{ record.totalPaid | number:'1.2-2' }}</td>
+              <td style="color: var(--danger-color); font-weight: 600;">₹{{ record.remainingAmount | number:'1.2-2' }}</td>
+              
+              <td><span class="badge paid">{{ record.paymentMode }}</span></td>
+              <td class="text-muted" style="font-size: 13px;">{{ record.paymentDate | date:'MMM dd, yyyy, h:mm a' }}</td>
+              <td class="text-right action-cell">
+                <button class="icon-btn-small action-icon receipt-icon" title="Print Receipt" (click)="downloadReceipt(record)">
+                  <span class="material-icons-round">receipt_long</span>
+                </button>
+                <button class="icon-btn-small action-icon danger-icon delete-btn" title="Delete Receipt" (click)="deleteReceipt(record)">
+                  <span class="material-icons-round">delete_outline</span>
+                </button>
               </td>
-              <td class="text-muted">{{ record.paymentDate | date:'MMM dd, yyyy, h:mm a' }}</td>
-             <td class="text-right" style="display: flex; gap: 8px; justify-content: flex-end;">
-  <button class="icon-btn-small action-icon receipt-icon" title="Print Receipt"
-    (click)="downloadReceipt(record)">
-    <span class="material-icons-round">receipt_long</span>
-  </button>
-  <button class="icon-btn-small action-icon danger-icon" title="Delete Receipt" style="color: var(--danger-color);"
-    (click)="deleteReceipt(record)">
-    <span class="material-icons-round">delete_outline</span>
-  </button>
-</td>
             </tr>
           </ng-container>
         </tbody>
       </table>
     </div>
 
-    <div class="pagination-footer" *ngIf="selectedGrade && totalItems > 0">
+    <div class="pagination-footer" *ngIf="activeTab === 'transactions' && selectedGrade && totalItems > 0">
       <div class="pagination-info">
         Showing <strong>{{ startIndex + 1 }}</strong> to <strong>{{ endIndex }}</strong>
         of <strong>{{ totalItems }}</strong> entries
@@ -136,71 +151,129 @@
           <span class="material-icons-round">arrow_back</span> Prev
         </button>
         <div class="page-numbers">
-          <button class="num-btn" *ngFor="let page of pages" [class.active]="currentPage === page"
-            (click)="goToPage(page)">{{ page }}</button>
+          <button class="num-btn" *ngFor="let page of pages" [class.active]="currentPage === page" (click)="goToPage(page)">{{ page }}</button>
         </div>
         <button class="nav-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
           Next <span class="material-icons-round">arrow_forward</span>
         </button>
       </div>
     </div>
+
+
+    <div class="table-responsive table-scrollable" *ngIf="activeTab === 'duereport'">
+      <table class="pro-table">
+        <thead class="sticky-header">
+          <tr>
+            <th>Student Details</th>
+            <th>Total Due Pending</th>
+            <th>Pending Items Breakdown</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+          <tr *ngIf="!isReportLoading && selectedGrade && !selectedTillMonth">
+            <td colspan="4" class="empty-state">
+              <span class="material-icons-round empty-icon-calendar">calendar_month</span>
+              <p class="empty-text-calendar">Please select a 'Till Month' from the dropdown to generate the report.</p>
+            </td>
+          </tr>
+
+          <tr *ngIf="isReportLoading">
+            <td colspan="4" class="loading-cell">
+              <span class="material-icons-round loading-icon">autorenew</span>
+              <p class="loading-text">Calculating class dues...</p>
+            </td>
+          </tr>
+
+          <tr *ngIf="!isReportLoading && !selectedGrade">
+            <td colspan="4" class="empty-state">
+              <span class="material-icons-round empty-icon">domain</span>
+              <p>Select a grade to generate the due report.</p>
+            </td>
+          </tr>
+
+          <tr *ngIf="!isReportLoading && selectedGrade && selectedTillMonth && dueReports.length === 0">
+            <td colspan="4" class="empty-state">
+              <span class="material-icons-round empty-icon-success">task_alt</span>
+              <p class="empty-text-success">All students in this class have fully paid their dues up to this month!</p>
+            </td>
+          </tr>
+
+          <ng-container *ngIf="!isReportLoading">
+            <tr *ngFor="let rep of dueReports">
+              <td>
+                <div class="user-cell">
+                  <div class="user-cell-info">
+                    <span class="user-name report-user-name">{{ rep.studentName }}</span>
+                    <span class="user-subtext">SR No: {{ rep.srNumber }}</span>
+                  </div>
+                </div>
+              </td>
+              <td class="due-amount-cell">₹{{ rep.totalDue | number:'1.2-2' }}</td>
+              <td>
+                <div class="due-breakdown-list">
+                  <span *ngFor="let item of rep.dueBreakdown">• {{ item }}</span>
+                </div>
+              </td>
+              <td class="text-right">
+                <button class="btn-primary btn-collect-small" (click)="openRecordFeePanel(rep.studentId, rep.studentName)">
+                  Collect Dues
+                </button>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+
   </div>
 </div>
 
 <div class="panel-backdrop" [class.active]="isSidePanelOpen" (click)="closePanel()"></div>
-
-<div class="side-panel" [class.open]="isSidePanelOpen" style="width: 600px;">
+<div class="side-panel fee-side-panel" [class.open]="isSidePanelOpen">
   <div class="panel-header">
     <div>
-      <h2 style="margin:0;">Record Fee Payment</h2>
-      <p style="margin:2px 0 0;font-size:13px;opacity:0.7;">{{ currentFee.studentName }}</p>
+      <h2 class="panel-title">Record Fee Payment</h2>
+      <p class="panel-subtitle">{{ currentFee.studentName }}</p>
     </div>
     <button class="icon-btn-small delete" (click)="closePanel()">
       <span class="material-icons-round">close</span>
     </button>
   </div>
   <div class="panel-body">
-    <app-fee-checkout *ngIf="currentFee?.id" [studentId]="currentFee.id!" 
+    <app-fee-checkout *ngIf="currentFee?.id" 
+      [studentId]="currentFee.id!" 
+      [studentGrade]="currentFee.grade!" 
       (paymentComplete)="onPaymentSuccess($event)">
     </app-fee-checkout>
   </div>
 </div>
 
 <div class="panel-backdrop" [class.active]="isSearchModalOpen" (click)="closeStudentSearchModal()"></div>
-
-<div class="search-modal" *ngIf="isSearchModalOpen"
-  style="position:fixed;top:20%;left:50%;transform:translate(-50%,0);background:white;width:90%;max-width:500px;border-radius:12px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);z-index:1002;overflow:hidden;">
-
-  <div
-    style="padding:20px;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;background:#f8fafc;">
-    <h3 style="margin:0;font-size:16px;color:var(--text-main);">Find Student for Payment</h3>
+<div class="search-modal" *ngIf="isSearchModalOpen">
+  <div class="panel-header">
+    <h3 class="panel-title">Quick Collect: Select Student</h3>
     <button class="icon-btn-small delete" (click)="closeStudentSearchModal()">
       <span class="material-icons-round">close</span>
     </button>
   </div>
-
-  <div style="padding:20px;">
-    <div class="premium-search" style="width:100%;border:1px solid var(--border-color);margin-bottom:16px;">
-      <span class="material-icons-round search-icon">search</span>
-      <input type="text" placeholder="Search by name or SR Number..." [(ngModel)]="studentSearchQuery"
-        (ngModelChange)="searchMasterStudents()" autofocus>
+  <div class="modal-body">
+    <div class="form-group">
+      <label>1. Select Standard</label>
+      <select class="form-control" [(ngModel)]="tempSelectedGrade" (change)="onGradeSelectedInModal()">
+        <option value="">-- Choose Grade --</option>
+        <option *ngFor="let std of standards" [value]="std.value">{{ std.label }}</option>
+      </select>
     </div>
-
-    <div style="max-height:300px;overflow-y:auto;">
-      <div *ngIf="studentSearchResults.length === 0 && studentSearchQuery.length >= 2"
-        style="text-align:center;color:var(--text-muted);padding:20px;">
-        No students found.
-      </div>
-      <div *ngFor="let student of studentSearchResults" (click)="selectStudentForPayment(student)"
-        style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid #f1f5f9;cursor:pointer;"
-        onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor='transparent'">
-        <div>
-          <div style="font-weight:600;color:var(--text-main);">{{ student.name }}</div>
-          <div style="font-size:12px;color:var(--text-muted);">{{ student.srNumber }} • Grade {{ student.standard }}
-          </div>
-        </div>
-        <span class="material-icons-round" style="color:var(--primary-color);">chevron_right</span>
-      </div>
+    <div class="form-group" *ngIf="tempSelectedGrade">
+      <label>2. Select Student</label>
+      <select class="form-control" [(ngModel)]="tempSelectedStudent" (change)="onStudentSelectedInModal()">
+        <option [ngValue]="null">-- Choose Student --</option>
+        <option *ngFor="let student of studentSearchResults" [ngValue]="student">
+          {{ student.name || student.studentName }} (SR: {{ student.srNumber }})
+        </option>
+      </select>
     </div>
   </div>
 </div>

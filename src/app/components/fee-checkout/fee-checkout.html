@@ -5,42 +5,36 @@
     <p>Loading dues...</p>
   </div>
 
-  <div *ngIf="!isLoading && availableFacilities.length > 0" style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-bottom: 16px;">
-    <p style="margin: 0 0 12px 0; font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Optional Fees / One-Time Payments</p>
-    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-      <button *ngFor="let fac of availableFacilities" 
-              class="btn-secondary" 
-              style="padding: 6px 16px; font-size: 13px; border-radius: 20px;"
-              (click)="addFacility(fac.id)"
-              [disabled]="isAssigning">
-        <span class="material-icons-round" style="font-size: 16px; color: var(--primary-color);">add_circle</span> 
-        {{ fac.name }}
-      </button>
-    </div>
-  </div>
-
   <div *ngIf="!isLoading && transportRoutes.length > 0" style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-bottom: 16px;">
     <p style="margin: 0 0 12px 0; font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Include Transport Fee</p>
-    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-      
+    
+    <div style="display: flex; flex-direction: column; gap: 12px;">
       <select class="form-control form-control-sm" 
               [(ngModel)]="selectedRouteId" 
-              (ngModelChange)="calculateTotals()"
-              style="min-width: 250px;">
+              (ngModelChange)="onRouteSelect()"
+              style="min-width: 250px; width: max-content;">
         <option [ngValue]="null">-- Select Transport Route --</option>
         <option *ngFor="let route of transportRoutes" [ngValue]="route.id">
           {{ route.locationName }} (₹{{ route.monthlyFee }}/mo)
         </option>
       </select>
 
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <label style="margin:0; font-size: 13px; font-weight: 600;">Months:</label>
-        <input type="number" class="form-control form-control-sm" 
-               [(ngModel)]="transportMonths" 
-               (ngModelChange)="calculateTotals()"
-               min="1" max="12" 
-               [disabled]="!selectedRouteId"
-               style="width: 70px; text-align: center;">
+      <div *ngIf="selectedRouteId" style="display: flex; flex-direction: column; gap: 8px;">
+        <label style="margin:0; font-size: 13px; font-weight: 600;">Select Unpaid Months:</label>
+        
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <label *ngFor="let m of availableTransportMonths" 
+                 style="font-size: 12px; display: flex; align-items: center; gap: 4px; background: #fff; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; user-select: none;"
+                 [style.border-color]="m.selected ? 'var(--primary-color)' : '#cbd5e1'"
+                 [style.background]="m.selected ? '#eff6ff' : '#fff'">
+            <input type="checkbox" [(ngModel)]="m.selected" (change)="onMonthToggle()" style="accent-color: var(--primary-color);"> 
+            {{ m.name }}
+          </label>
+        </div>
+
+        <div *ngIf="availableTransportMonths.length === 0" style="color: var(--success-color); font-size: 13px; font-weight: 600;">
+          <span class="material-icons-round" style="font-size: 14px; vertical-align: middle;">check_circle</span> All transport months are fully paid for this route!
+        </div>
       </div>
     </div>
   </div>
@@ -81,7 +75,7 @@
                 <input type="number" class="form-control form-control-sm" 
                        [(ngModel)]="due.payingAmount" 
                        [disabled]="!due.selected" 
-                       (ngModelChange)="calculateTotals()" 
+                       (ngModelChange)="onPayingAmountChange(due)" 
                        min="0"
                        placeholder="0">
               </td>
@@ -89,7 +83,7 @@
                 <input type="number" class="form-control form-control-sm" 
                        [(ngModel)]="due.concessionAmount" 
                        [disabled]="!due.selected" 
-                       (ngModelChange)="calculateTotals()" 
+                       (ngModelChange)="onConcessionChange(due)" 
                        min="0"
                        placeholder="0">
               </td>
@@ -99,7 +93,7 @@
       </table>
     </div>
 
-    <div class="checkout-footer" style="margin-top: 24px;">
+   <div class="checkout-footer" style="margin-top: 24px;">
       <div class="payment-mode-section">
         <label>Mode:</label>
         <select class="form-control" [(ngModel)]="paymentMode" style="width: 150px;">
@@ -110,19 +104,27 @@
       </div>
 
       <div class="totals-section">
+        
         <div class="concession-row" *ngIf="concessionTotal > 0">
           Discount Applied: <span>₹{{ concessionTotal | number:'1.2-2' }}</span>
         </div>
         
-        <div class="net-row" *ngIf="getTransportTotal() > 0" style="color: var(--primary-color); font-size: 14px; margin-bottom: 4px;">
-          Transport Add-on: <span>+ ₹{{ getTransportTotal() | number:'1.2-2' }}</span>
+        <div class="net-row" style="color: var(--text-muted); font-size: 14px; margin-bottom: 8px;">
+          Total Bill (Net Payable): <span>₹{{ netPayable | number:'1.2-2' }}</span>
+        </div>
+
+        <div class="net-row" style="align-items: center;">
+          <span style="font-size: 16px; font-weight: 700; color: var(--text-main);">Amount Paying Now:</span>
+          <input type="number" class="form-control form-control-sm" 
+                 [(ngModel)]="actualPaidAmount" 
+                 style="width: 140px; font-size: 18px; font-weight: bold; margin-left: 12px; border: 2px solid var(--primary-color); border-radius: 8px;">
+        </div>
+
+        <div class="net-row" *ngIf="(netPayable - actualPaidAmount) > 0" style="color: var(--danger-color); font-size: 13px; margin-top: 4px;">
+          Remaining Due (Will map to pending): <span>₹{{ (netPayable - actualPaidAmount) | number:'1.2-2' }}</span>
         </div>
         
-        <div class="net-row">
-          Net Payable: <span class="net-amount">₹{{ netPayable | number:'1.2-2' }}</span>
-        </div>
-        
-        <button class="btn-primary pay-btn" 
+        <button class="btn-primary pay-btn" style="margin-top: 12px;"
                 (click)="processPayment()" 
                 [disabled]="isProcessing || (netPayable === 0 && concessionTotal === 0)">
           <span class="material-icons-round">payment</span>

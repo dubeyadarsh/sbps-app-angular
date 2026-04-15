@@ -40,7 +40,7 @@ export class StudentsComponent implements OnInit {
   selectedGrade: string = ''; 
   searchText: string = '';
   currentPage: number = 1;
-  pageSize: number = 30; 
+  pageSize: number = 32; 
   isLoading: boolean = false; 
   
   isSidePanelOpen: boolean = false;
@@ -352,194 +352,262 @@ saveStudent(): void {
     }
   }
  // ==========================================
-  // BULK ID GENERATION (8 Cards per Landscape A4)
-  // OPTIMIZED FOR LARGE BATCHES
-  // ==========================================
-@ViewChild('bulkContainer', { static: false }) bulkContainer!: ElementRef;
-
-showProgressModal: boolean = false;
-progressCurrent: number = 0;
-progressTotal: number = 0;
-progressPercent: number = 0;
-progressCurrentBatch: number = 0;
-progressTotalBatches: number = 0;
-progressCurrentStudent: string = '';
+// BULK ID GENERATION — Pure jsPDF, no html2canvas
+// Card styled to exactly match single ID card (270×430px → 54×86mm, 1px = 0.2mm)
+// ==========================================
 isGenerating: boolean = false;
-cancelGeneration: boolean = false;
-
-// ==========================================
-// OPTIMIZED BULK ID GENERATION WITH PROGRESS
-// ==========================================
 
 async generateBulkIDs(): Promise<void> {
-  if (!this.allStudents || this.allStudents.length === 0) {
-    this.notificationService.showError("No students found.");
+  if (!this.allStudents?.length) {
+    this.notificationService.showError('No students found.');
     return;
   }
 
-  // Show progress modal
-  this.showProgressModal = true;
   this.isGenerating = true;
-  this.cancelGeneration = false;
-  this.progressCurrent = 0;
-  this.progressTotal = this.allStudents.length;
-  this.progressPercent = 0;
   this.cdr.detectChanges();
-
-  // Prepare container
-  const container = document.querySelector('.bulk-print-container') as HTMLElement;
-  if (!container) {
-    this.closeProgressModal();
-    return;
-  }
-
-  container.classList.add('printing-active');
-  
-  // Pre-load all images first
-  await this.preloadAllImages(container);
-  
-  if (this.cancelGeneration) {
-    this.cleanupGeneration(container);
-    return;
-  }
+  this.notificationService.showSuccess('Preparing ID cards…');
 
   try {
-    const cardsPerPage = 8;
-    const totalBatches = Math.ceil(this.allStudents.length / cardsPerPage);
-    this.progressTotalBatches = totalBatches;
-    
-    // Process batches one by one with UI updates
-    for (let batch = 0; batch < totalBatches; batch++) {
-      if (this.cancelGeneration) break;
-      
-      this.progressCurrentBatch = batch + 1;
-      this.cdr.detectChanges();
-      
-      await this.generateBatchPDF(batch, cardsPerPage, container);
-      
-      // Small delay between batches for UI to breathe
-      if (batch < totalBatches - 1) {
-        await this.delay(500);
-      }
+    const imageMap = await this.preloadStudentImages();
+
+    const pdf     = new jsPDF('l', 'mm', 'a4');
+    const cols    = 4, rows = 2;
+    const cardW   = 54, cardH = 86;
+    const gapX    = 5,  gapY  = 6;
+    const totalW  = cols * cardW + (cols - 1) * gapX;  // 231 mm
+    const totalH  = rows * cardH + (rows - 1) * gapY;  // 178 mm
+    const startX  = (297 - totalW) / 2;                 //  33 mm
+    const startY  = (210 - totalH) / 2;                 //  16 mm
+    const perPage = cols * rows;                         //   8 cards
+
+    for (let i = 0; i < this.allStudents.length; i++) {
+      const pos = i % perPage;
+      if (i > 0 && pos === 0) pdf.addPage();
+
+      const col = pos % cols;
+      const row = Math.floor(pos / cols);
+      const x   = startX + col * (cardW + gapX);
+      const y   = startY + row * (cardH + gapY);
+
+      this.drawIdCard(pdf, this.allStudents[i], x, y, cardW, cardH,
+                      imageMap.get(this.allStudents[i].id) ?? null);
     }
-    
-    if (!this.cancelGeneration) {
-      this.notificationService.showSuccess(`Successfully generated ${this.progressTotalBatches} PDF file(s)!`);
-    }
+
+    pdf.save(`ID_Cards_Grade_${this.selectedGrade}_${this.academicYear}.pdf`);
+    this.notificationService.showSuccess(`✅ ${this.allStudents.length} ID cards generated!`);
   } catch (err) {
-    console.error('Generation error:', err);
-    this.notificationService.showError("Generation interrupted. Please try again.");
+    console.error(err);
+    this.notificationService.showError('Failed to generate ID cards.');
   } finally {
-    this.cleanupGeneration(container);
+    this.isGenerating = false;
+    this.cdr.detectChanges();
   }
 }
 
-private async preloadAllImages(container: HTMLElement): Promise<void> {
-  const images = Array.from(container.querySelectorAll('img'));
-  const total = images.length;
-  
-  for (let i = 0; i < images.length; i++) {
-    if (this.cancelGeneration) return;
-    
-    const img = images[i] as HTMLImageElement;
-    if (!img.complete) {
-      await new Promise((resolve) => {
-        img.onload = resolve;
-        img.onerror = resolve;
+// ── Parallel image prefetch (5 at a time, with browser cache) ──────────────
+private async preloadStudentImages(): Promise<Map<number, string | null>> {
+  const map = new Map<number, string | null>();
+
+  const load = async (s: Student): Promise<void> => {
+    if (!s.photoUrl) { map.set(s.id, null); return; }
+    try {
+      const res  = await fetch(`${baseApiUrl}api/students/photos/${s.photoUrl}`,
+                               { mode: 'cors', cache: 'force-cache' });
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const b64  = await new Promise<string>((ok, fail) => {
+        const r = new FileReader();
+        r.onloadend = () => ok(r.result as string);
+        r.onerror   = fail;
+        r.readAsDataURL(blob);
       });
-    }
-    
-    // Update progress for image loading
-    this.progressCurrent = i + 1;
-    this.progressPercent = (this.progressCurrent / total) * 30; // 30% for loading
-    this.progressCurrentStudent = `Loading images... (${i + 1}/${total})`;
-    this.cdr.detectChanges();
-    
-    // Small delay to prevent UI freeze
-    if (i % 10 === 0) await this.delay(10);
+      map.set(s.id, b64);
+    } catch { map.set(s.id, null); }
+  };
+
+  for (let i = 0; i < this.allStudents.length; i += 5)
+    await Promise.all(this.allStudents.slice(i, i + 5).map(load));
+
+  return map;
+}
+
+// ── Draw one card — pixel-matched to .id-card-wrapper CSS (1px = 0.2mm) ───
+private drawIdCard(
+  pdf: jsPDF, s: Student,
+  x: number, y: number, w: number, h: number,
+  imgData: string | null
+): void {
+
+  // ── Card base: white fill + light border (#e2e8f0) ──────────────────────
+  pdf.setFillColor(255, 255, 255);
+  pdf.rect(x, y, w, h, 'F');
+  pdf.setDrawColor(226, 232, 240);
+  pdf.setLineWidth(0.25);
+  pdf.rect(x, y, w, h, 'S');
+
+  // ════════════════════════════════════════════════════════════════════════
+  // HEADER  — bg #000080 (Navy Blue), height increased to 15mm
+  // ════════════════════════════════════════════════════════════════════════
+  pdf.setFillColor(0, 0, 128);   // Updated to --primary-color: #000080
+  const headerHeight = 15;
+  pdf.rect(x, y, w, headerHeight, 'F');
+
+  // School name: White, bold
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8.5);
+  pdf.text('S.B. PUBLIC SCHOOL', x + w / 2, y + 6, { align: 'center' });
+
+  // Subtitle/Year: Moved slightly up to y+10 to clear the photo frame
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(6);
+  pdf.setTextColor(210, 210, 255); 
+  pdf.text(`Identity Card | ${this.academicYear}`, x + w / 2, y + 10, { align: 'center' });
+
+  // ════════════════════════════════════════════════════════════════════════
+  // PHOTO ROW — Shifted down to y + 12 to avoid hiding the "Year" text
+  // ════════════════════════════════════════════════════════════════════════
+  const photoW = 17, photoH = 19;
+  const photoX = x + (w - photoW) / 2;
+  const photoY = y + 12; // Lowered from 10 to 12 to prevent overlap
+
+  // Photo Frame Shadow
+  pdf.setFillColor(200, 200, 200);
+  pdf.rect(photoX + 0.4, photoY + 0.4, photoW + 0.8, photoH + 0.8, 'F');
+
+  // White border
+  pdf.setFillColor(255, 255, 255);
+  pdf.rect(photoX - 0.6, photoY - 0.6, photoW + 1.2, photoH + 1.2, 'F');
+
+  // Photo image
+  if (imgData) {
+    try {
+      const fmt = imgData.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+      pdf.addImage(imgData, fmt, photoX, photoY, photoW, photoH);
+    } catch { this.drawPhotoPlaceholder(pdf, photoX, photoY, photoW, photoH); }
+  } else {
+    this.drawPhotoPlaceholder(pdf, photoX, photoY, photoW, photoH);
   }
-}
 
-private async generateBatchPDF(batchIndex: number, cardsPerPage: number, container: HTMLElement): Promise<void> {
-  const startIdx = batchIndex * cardsPerPage;
-  const endIdx = Math.min(startIdx + cardsPerPage, this.allStudents.length);
-  const pdf = new jsPDF('l', 'mm', 'a4');
-  
-  const cardWidth = 54, cardHeight = 86;
-  const cols = 4, rows = 2;
-  const gapX = 5, gapY = 5;
-  
-  const startX = (297 - ((cols * cardWidth) + (3 * gapX))) / 2;
-  const startY = (210 - ((rows * cardHeight) + (1 * gapY))) / 2;
-  
-  // Process cards in this batch with progress updates
-  for (let i = startIdx; i < endIdx; i++) {
-    if (this.cancelGeneration) return;
-    
-    const element = document.getElementById(`print-card-${i}`);
-    if (!element) continue;
-    
-    // Update progress
-    this.progressCurrent = i + 1;
-    this.progressPercent = 30 + ((this.progressCurrent / this.progressTotal) * 70);
-    this.progressCurrentStudent = this.allStudents[i]?.name || `Student ${i + 1}`;
-    this.cdr.detectChanges();
-    
-    // Yield to browser to prevent freezing
-    await this.delay(1);
-    
-    const canvas = await html2canvas(element, {
-      scale: 1.5,
-      useCORS: true,
-      logging: false,
-      imageTimeout: 0,
-      backgroundColor: '#ffffff',
-      allowTaint: false
-    });
-    
-    const imgData = canvas.toDataURL('image/jpeg', 0.8);
-    const indexOnPage = i - startIdx;
-    const col = indexOnPage % cols;
-    const row = Math.floor(indexOnPage / cols);
-    
-    pdf.addImage(imgData, 'JPEG', 
-      startX + (col * (cardWidth + gapX)), 
-      startY + (row * (cardHeight + gapY)), 
-      cardWidth, cardHeight
-    );
-    
-    // Clean up canvas
-    canvas.width = 0;
-    canvas.height = 0;
+  // SIDE LABELS (Session & SR No) - Adjusted Y to match new photo position
+  const sideLabelY = photoY + 6;
+  pdf.setFontSize(4.5);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(220, 38, 38); // Red labels
+  pdf.text('SESSION', x + 3, sideLabelY);
+  pdf.text('S.R. No.', x + w - 3, sideLabelY, { align: 'right' });
+
+  pdf.setFontSize(5.5);
+  pdf.setTextColor(30, 41, 59);
+  pdf.text(this.academicYear, x + 3, sideLabelY + 4);
+  pdf.text(s.srNumber || '-', x + w - 3, sideLabelY + 4, { align: 'right' });
+
+  // ════════════════════════════════════════════════════════════════════════
+  // STUDENT NAME — Shifted down slightly
+  // ════════════════════════════════════════════════════════════════════════
+  const nameY = photoY + photoH + 5; 
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(0, 0, 128); // Match navy primary
+  pdf.text((s.name || '').toUpperCase(), x + w / 2, nameY, { align: 'center' });
+
+  // ════════════════════════════════════════════════════════════════════════
+  // GRADE PILL
+  // ════════════════════════════════════════════════════════════════════════
+  const gradeStr = `Grade: ${s.standard}`;
+  pdf.setFontSize(7);
+  const pillW = pdf.getTextWidth(gradeStr) + 5;
+  const pillH = 4.5;
+  const gradeY = nameY + 5.5;
+  const pillX = x + (w - pillW) / 2;
+
+  pdf.setFillColor(240, 240, 255);
+  pdf.roundedRect(pillX, gradeY - 3.2, pillW, pillH, 1, 1, 'F');
+  pdf.setTextColor(0, 0, 128);
+  pdf.text(gradeStr, x + w / 2, gradeY, { align: 'center' });
+
+  // ════════════════════════════════════════════════════════════════════════
+  // DETAILS GRID — Added Mother's Name to fill vertical space
+  // ════════════════════════════════════════════════════════════════════════
+  const divY = gradeY + 3;
+  pdf.setDrawColor(200, 200, 200);
+  pdf.setLineDashPattern([0.5, 0.5], 0);
+  pdf.line(x + 5, divY, x + w - 5, divY);
+  pdf.setLineDashPattern([], 0);
+
+  let detY = divY + 4;
+  const rowGap = 3.8; // Tightened gap slightly to fit 4 rows
+
+  // Added Mother's Name to utilize the space effectively
+  const details = [
+    { label: 'Father:', value: s.fathersName || '-' },
+    { label: 'Mother:', value: s.mothersName || '-' },
+    { label: 'D.O.B:',  value: this.formatDate(s.dob) },
+    { label: 'Phone:',  value: s.phoneNumber || '-' },
+  ];
+
+  pdf.setFontSize(6);
+  for (const d of details) {
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(100, 116, 139);
+    pdf.text(d.label, x + 4, detY);
+
+    pdf.setTextColor(30, 41, 59);
+    pdf.text(this.truncate(d.value, 22), x + w - 4, detY, { align: 'right' });
+    detY += rowGap;
   }
+
+  // ════════════════════════════════════════════════════════════════════════
+  // FOOTER — Address and Signature
+  // ════════════════════════════════════════════════════════════════════════
+  const footerY = y + h - 15;
+  pdf.setFillColor(250, 250, 252);
+  pdf.rect(x + 0.5, footerY, w - 1, 14.5, 'F');
+
+  // Address
+  pdf.setFontSize(5);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(71, 85, 105);
+  const addrLines = pdf.splitTextToSize(`Add: ${s.address || 'N/A'}`, w - 8);
+  pdf.text(addrLines.slice(0, 2), x + w / 2, footerY + 3.5, { align: 'center', lineHeightFactor: 1.1 });
+
+  // Signature
+  const sigY = y + h - 4.5;
+  pdf.setDrawColor(0, 0, 128);
+  pdf.setLineWidth(0.2);
+  pdf.line(x + w / 2 - 10, sigY, x + w / 2 + 10, sigY);
   
-  // Save PDF
-  const fileName = `ID_Cards_Batch_${batchIndex + 1}_of_${this.progressTotalBatches}.pdf`;
-  pdf.save(fileName);
-  
-  // Allow UI to update after save
-  await this.delay(100);
+  pdf.setFontSize(5);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('PRINCIPAL SIGNATURE', x + w / 2, sigY + 2.5, { align: 'center' });
 }
 
-private delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+// ── Grey placeholder when no photo ─────────────────────────────────────────
+private drawPhotoPlaceholder(
+  pdf: jsPDF, x: number, y: number, w: number, h: number
+): void {
+  pdf.setFillColor(241, 245, 249);  // #f1f5f9
+  pdf.rect(x, y, w, h, 'F');
+  pdf.setFontSize(4);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(148, 163, 184);  // #94a3b8
+  pdf.text('No Photo', x + w / 2, y + h / 2 + 0.8, { align: 'center' });
 }
 
-private cleanupGeneration(container: HTMLElement): void {
-  container.classList.remove('printing-active');
-  this.isGenerating = false;
-  this.closeProgressModal();
-  this.cdr.detectChanges();
+// ── Helpers ────────────────────────────────────────────────────────────────
+private formatDate(raw: string): string {
+  if (!raw) return '-';
+  try {
+    const d = new Date(raw);
+    return [String(d.getDate()).padStart(2,'0'),
+            String(d.getMonth()+1).padStart(2,'0'),
+            d.getFullYear()].join('-');
+  } catch { return raw; }
 }
 
-closeProgressModal(): void {
-  this.showProgressModal = false;
-  this.isGenerating = false;
-  this.cancelGeneration = false;
+private truncate(text: string, max: number): string {
+  if (!text) return '';
+  return text.length > max ? text.substring(0, max - 1) + '…' : text;
 }
 
-cancelBulkGeneration(): void {
-  this.cancelGeneration = true;
-  this.notificationService.showError("Cancelling generation... Please wait.");
-}
 }

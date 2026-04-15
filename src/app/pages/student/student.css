@@ -744,3 +744,38 @@
   background: #dcfce7;
   color: #166534;
 }
+
+/* Primary Theme Button */
+.btn-print-id {
+  background-color: #000080; /* Your Primary Navy Blue */
+  color: #ffffff;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s active;
+  box-shadow: 0 2px 4px rgba(0, 0, 80, 0.15);
+}
+
+.btn-print-id:hover {
+  background-color: #000066; /* Slightly darker navy */
+  box-shadow: 0 4px 6px rgba(0, 0, 80, 0.2);
+}
+
+.btn-print-id:active {
+  transform: scale(0.97);
+}
+
+.btn-print-id:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Optional: Icon styling inside button */
+.btn-print-id i {
+  font-size: 1.1rem;
+}

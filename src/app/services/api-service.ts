@@ -66,18 +66,6 @@ export class ApiService {
 
 
 
-// Updated: no status param — grid shows paid transactions only
-  getFeeTransactions(grade: string, search: string, page: number, size: number): Observable<any> {
-    let params = new HttpParams()
-      .set('grade', grade)
-      .set('page', page.toString())
-      .set('size', size.toString());
-    if (search && search.trim()) {
-      params = params.set('search', search.trim());
-    }
-    return this.http.get<any>(`${this.apiUrl}api/fees/transactions`, { params });
-  }
-
   // Returns enriched dues (feeTypeName, isRecurring) for checkout panel
   getPendingDues(studentId: number | string): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}api/fees/pending/${studentId}`);
@@ -262,7 +250,38 @@ assignTransportRoute(studentId: number, routeId: number, months: number) {
     months
   });
 }
-deleteTransaction(transactionId: number) {
-  return this.http.delete(`${this.apiUrl}api/fees/transaction/${transactionId}`);
+// Add this inside api-service.ts
+  deleteTransaction(receiptId: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}api/fees/transaction/${receiptId}`);
+  }
+// Add these to your existing ApiService class in api-service.ts
+
+// Fetches the master rules for a grade (e.g., Grade 5 has Tuition: 2000, Exam: 500)
+getClassFeeRulesByGrade(grade: string): Observable<any> {
+  return this.http.get<any>(`${this.apiUrl}api/fees/config/rules/${grade}`);
 }
+
+// Simple list of students for the dropdown
+getStudentsByStandard(grade: string): Observable<any> {
+  return this.http.get<any>(`${this.apiUrl}api/students/list?standard=${grade}`);
+}
+getStudentPaidTransactions(studentId: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}api/fees/transactions/student/${studentId}`);
+  }
+  // Update this method in api-service.ts
+  getClassDueReport(grade: string, tillMonth?: number | string): Observable<any> {
+    let url = `${this.apiUrl}api/fees/due-report?standard=${grade}`;
+    if (tillMonth) {
+      url += `&tillMonth=${tillMonth}`;
+    }
+    return this.http.get<any>(url);
+  }
+ // In your api-service.ts
+  getFeeTransactions(grade: string, studentId: number | string, page: number, size: number): Observable<any> {
+    let url = `${this.apiUrl}api/fees/transactions?standard=${grade}&page=${page}&size=${size}`;
+    if (studentId) {
+      url += `&studentId=${studentId}`;
+    }
+    return this.http.get<any>(url);
+  }
 }

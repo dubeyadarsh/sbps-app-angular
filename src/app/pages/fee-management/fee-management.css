@@ -221,10 +221,31 @@
 /* =========================================
    SLIDE-OUT DRAWER (Form)
    ========================================= */
-.panel-backdrop { position: fixed; inset: 0; background-color: rgba(15, 23, 42, 0.4); backdrop-filter: blur(2px); z-index: 1000; opacity: 0; visibility: hidden; transition: all 0.3s; }
+.panel-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5); /* or backdrop-filter: blur(4px); if you use blur */
+  z-index: 1040; 
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease-in-out;
+}
 .panel-backdrop.active { opacity: 1; visibility: visible; }
-.side-panel { position: fixed; top: 0; right: -600px; width: 100%; max-width: 550px; height: 100vh; background-color: var(--card-bg); box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1); z-index: 1001; display: flex; flex-direction: column; transition: right 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.side-panel.open { right: 0; }
+.side-panel {
+  position: fixed;
+  top: 0;
+  right: -650px; /* Hide off-screen by default */
+  height: 100vh;
+  background: #ffffff;
+  box-shadow: -5px 0 25px rgba(0,0,0,0.15);
+  transition: right 0.3s ease-in-out;
+  z-index: 1050; /* THIS MUST BE HIGHER THAN 1040 */
+  display: flex;
+  flex-direction: column;
+}.side-panel.open { right: 0; }
 .panel-header { padding: 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
 .panel-header h2 { font-size: 18px; font-weight: 700; color: var(--text-main); margin: 0; }
 .panel-body { padding: 32px 24px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
@@ -370,3 +391,279 @@
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* =========================================
+   QUICK COLLECT MODAL STYLES
+   ========================================= */
+
+/* Dark transparent overlay behind the modal */
+.panel-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1040; /* High enough to cover the rest of the page */
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease-in-out;
+}
+
+/* When isSearchModalOpen is true, the backdrop becomes visible */
+.panel-backdrop.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* The actual dialog box centered on the screen */
+.search-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #ffffff;
+  width: 450px;
+  max-width: 95vw;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  z-index: 1050; 
+  display: flex;
+  flex-direction: column;
+  animation: modalFadeIn 0.3s ease-out forwards;
+  /* CRITICAL: Do NOT put overflow: hidden here, it cuts off dropdowns */
+  overflow: visible; 
+}
+/* Smooth pop-in animation */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -45%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* Spacing for the form elements inside the modal */
+.search-modal .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-modal .form-group label {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-color, #333);
+}
+
+.search-modal .form-control {
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 100%;
+  background-color: #ffffff;
+  color: #0f172a; /* Dark text to ensure it's visible */
+  appearance: auto; /* Forces the browser's native dropdown arrow */
+  cursor: pointer;
+}
+
+.search-modal .form-control:focus {
+  outline: none;
+  border-color: var(--primary-color, #2563eb);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+.search-modal .modal-body {
+  padding: 24px; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 20px;
+  min-height: 150px; /* Ensures the modal doesn't collapse too small */
+}
+
+/* --- Tab Navigation --- */
+.tab-navigation {
+  display: flex;
+  gap: 20px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 20px;
+  padding: 0 20px;
+}
+
+.tab-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  border-bottom: 3px solid transparent;
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+
+.tab-item.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+/* --- Toolbar Spacing & Actions --- */
+.toolbar-padded {
+  padding: 0 20px 20px 20px;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* --- Custom Buttons --- */
+.btn-export-pdf {
+  padding: 10px 20px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: var(--text-main);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.btn-export-pdf:hover {
+  border-color: var(--danger-color);
+  color: var(--danger-color);
+}
+
+.btn-export-pdf .material-icons-round {
+  font-size: 18px;
+  color: var(--danger-color);
+}
+
+.btn-quick-collect {
+  padding: 10px 20px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 6px;
+}
+
+.btn-quick-collect .material-icons-round {
+  font-size: 18px;
+}
+
+.btn-collect-small {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+/* --- Table Grid Fixes (100vh setup) --- */
+.table-scrollable {
+  max-height: calc(100vh - 250px);
+  overflow-y: auto;
+}
+
+.pro-table {
+  position: relative; /* Base for sticky header */
+}
+
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* --- Table Cells & Content --- */
+.action-cell {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.delete-btn {
+  color: var(--danger-color);
+}
+
+.due-amount-cell {
+  color: var(--danger-color);
+  font-weight: bold;
+  font-size: 15px;
+}
+
+.due-breakdown-list {
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.report-user-name {
+  font-weight: 600;
+}
+
+/* --- Loading States --- */
+.loading-cell {
+  padding: 48px;
+  text-align: center;
+}
+
+.loading-icon {
+  font-size: 28px;
+  color: var(--primary-color);
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* --- Empty States Custom Icons/Text --- */
+.empty-icon-calendar {
+  font-size: 40px;
+  color: #cbd5e1;
+}
+
+.empty-text-calendar {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 12px;
+}
+
+.empty-icon-success {
+  font-size: 40px;
+  color: var(--success-color);
+}
+
+.empty-text-success {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-top: 12px;
+}
+
+/* --- Modals & Panels --- */
+.fee-side-panel {
+  width: 600px;
+}
+
+.panel-title {
+  margin: 0;
+}
+
+.panel-subtitle {
+  margin: 2px 0 0;
+  font-size: 13px;
+  opacity: 0.7;
+}

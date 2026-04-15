@@ -14,25 +14,39 @@ import { NotificationService } from '../../services/notification';
 })
 export class FeesComponent implements OnInit {
 
+  // Global Filters
   selectedGrade: string = '';
-  searchText: string = '';
-
+  
+  // Tab 1: Transactions Data
+  selectedStudentFilter: number | '' = '';
+  classStudentsForFilter: any[] = [];
   pagedRecords: any[] = [];
+  isTableLoading: boolean = false;
+  
+  // Tab 2: Due Report Data
+  selectedTillMonth: string = ''; 
+  dueReports: any[] = [];
+  isReportLoading: boolean = false;
+
+  // View Controls
+  activeTab: 'transactions' | 'duereport' = 'transactions';
   reportStats = { total: 0, collected: 0, pending: 0, overdue: 0 };
 
+  // Pagination
   currentPage: number = 1;
   pageSize: number = 10;
   totalItems: number = 0;
   totalPages: number = 0;
 
+  // Modals
   isSidePanelOpen: boolean = false;
-  currentFee: { id?: number; studentName?: string } = {};
-
+  currentFee: { id?: number; studentName?: string; grade?: string } = {};
   isSearchModalOpen: boolean = false;
-  studentSearchQuery: string = '';
+  tempSelectedGrade: string = '';
+  tempSelectedStudent: any = null;
   studentSearchResults: any[] = [];
-  isTableLoading: boolean = false;
 
+  // Static Data
   standards: any[] = [
     { label: 'Grade PG', value: 'PG' },
     { label: 'Grade LKG', value: 'LKG' },
@@ -50,6 +64,13 @@ export class FeesComponent implements OnInit {
     { label: 'Grade 11', value: '11' },
   ];
 
+  academicMonths = [
+    { id: 1, name: 'Apr' }, { id: 2, name: 'May' }, { id: 3, name: 'Jun' },
+    { id: 4, name: 'Jul' }, { id: 5, name: 'Aug' }, { id: 6, name: 'Sep' },
+    { id: 7, name: 'Oct' }, { id: 8, name: 'Nov' }, { id: 9, name: 'Dec' },
+    { id: 10, name: 'Jan' }, { id: 11, name: 'Feb' }, { id: 12, name: 'Mar' }
+  ];
+
   constructor(
     private feeService: ApiService,
     public notificationService: NotificationService,
@@ -58,10 +79,44 @@ export class FeesComponent implements OnInit {
 
   ngOnInit(): void {}
 
+  switchTab(tab: 'transactions' | 'duereport'): void {
+    this.activeTab = tab;
+    this.currentPage = 1;
+    this.loadData();
+  }
+
+  onFilterChange(trigger: 'grade' | 'student' | 'month' = 'grade'): void {
+    this.currentPage = 1;
+    
+    // When grade changes, fetch the student list for the dropdown filter
+    if (trigger === 'grade') {
+      this.selectedStudentFilter = '';
+      this.classStudentsForFilter = [];
+      if (this.selectedGrade) {
+        this.feeService.getStudentsByStandard(this.selectedGrade).subscribe({
+          next: (res: any) => {
+            this.classStudentsForFilter = Array.isArray(res) ? res : (res.data || []);
+          }
+        });
+      }
+    }
+    
+    this.loadData();
+  }
+
   loadData(): void {
     if (!this.selectedGrade) return;
     this.fetchReportStats();
-    this.fetchTableData();
+    
+    if (this.activeTab === 'transactions') {
+      this.fetchTableData();
+    } else if (this.activeTab === 'duereport') {
+      if (this.selectedTillMonth) {
+        this.fetchDueReport();
+      } else {
+        this.dueReports = []; 
+      }
+    }
   }
 
   fetchReportStats(): void {
@@ -74,7 +129,10 @@ export class FeesComponent implements OnInit {
   fetchTableData(): void {
     this.isTableLoading = true;
     this.feeService.getFeeTransactions(
-      this.selectedGrade, this.searchText, this.currentPage - 1, this.pageSize
+      this.selectedGrade, 
+      this.selectedStudentFilter, 
+      this.currentPage - 1, 
+      this.pageSize
     ).subscribe({
       next: (res: any) => {
         const page = res.data;
@@ -92,9 +150,87 @@ export class FeesComponent implements OnInit {
     });
   }
 
-  onFilterChange(): void {
-    this.currentPage = 1;
-    this.loadData();
+  fetchDueReport(): void {
+    this.isReportLoading = true;
+    const tillMonthParam = this.selectedTillMonth ? Number(this.selectedTillMonth) : undefined;
+
+    this.feeService.getClassDueReport(this.selectedGrade, tillMonthParam).subscribe({
+      next: (res: any) => {
+        this.dueReports = res.data || [];
+        this.isReportLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.notificationService.showError('Failed to load due report.');
+        this.isReportLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  printDueReport(): void {
+    const win = window.open('', '_blank');
+    if (!win) return;
+
+    let rows = '';
+    let grandTotal = 0;
+
+    this.dueReports.forEach(row => {
+      grandTotal += parseFloat(row.totalDue);
+      const itemsHtml = row.dueBreakdown.map((item: string) => `<div>• ${item}</div>`).join('');
+      
+      rows += `
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;"><strong>${row.studentName}</strong><br><small style="color:gray;">SR: ${row.srNumber}</small></td>
+          <td style="padding: 8px; border: 1px solid #ddd; color: #ef4444; font-weight: bold;">₹${Number(row.totalDue).toFixed(2)}</td>
+          <td style="padding: 8px; border: 1px solid #ddd; font-size: 12px; color: #555;">${itemsHtml}</td>
+        </tr>
+      `;
+    });
+
+    const monthLabel = this.selectedTillMonth ? this.academicMonths.find(m => m.id == Number(this.selectedTillMonth))?.name : 'All Months';
+
+    win.document.write(`
+      <html>
+      <head>
+        <title>Fee Due Report - Grade ${this.selectedGrade}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th { background: #f8fafc; padding: 10px; border: 1px solid #ddd; text-align: left; }
+          h2, h3 { margin: 0; padding: 0; }
+        </style>
+      </head>
+      <body>
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h2>S. B. PUBLIC SCHOOL</h2>
+          <h3>Fee Due Report</h3>
+          <p>Class: <strong>${this.selectedGrade}</strong> | Calculated Until: <strong>${monthLabel}</strong></p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Student Details</th>
+              <th>Total Due</th>
+              <th>Pending Breakdowns</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td style="padding: 10px; text-align: right; font-weight: bold;">Class Total Pending:</td>
+              <td colspan="2" style="padding: 10px; border: 1px solid #ddd; font-weight: bold; color: #ef4444; font-size: 16px;">₹${grandTotal.toFixed(2)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </body>
+      </html>
+    `);
+    
+    win.document.close();
+    setTimeout(() => win.print(), 300);
   }
 
   goToPage(page: number): void {
@@ -111,8 +247,12 @@ export class FeesComponent implements OnInit {
   get startIndex(): number { return (this.currentPage - 1) * this.pageSize; }
   get endIndex(): number { return Math.min(this.startIndex + this.pageSize, this.totalItems); }
 
-  openRecordFeePanel(studentId: number, studentName: string): void {
-    this.currentFee = { id: studentId, studentName };
+  openRecordFeePanel(studentId: number, studentName: string, grade?: string): void {
+    this.currentFee = { 
+      id: studentId, 
+      studentName, 
+      grade: grade || this.selectedGrade 
+    };
     this.isSidePanelOpen = true;
     this.cdr.detectChanges();
   }
@@ -122,17 +262,13 @@ export class FeesComponent implements OnInit {
     setTimeout(() => { this.currentFee = {}; this.cdr.detectChanges(); }, 300);
   }
 
-  // UPDATED: Now receives the transactionId and triggers success flow
   onPaymentSuccess(transactionId?: number): void {
     this.closePanel();
     this.loadData();
     
-    // 1. Show Success Message
     this.notificationService.showSuccess('Payment recorded successfully!');
     
-    // 2. Automatically download/print the receipt if ID was returned
     if (transactionId) {
-      // Re-use our existing download logic
       this.downloadReceipt({ receiptId: transactionId });
     }
   }
@@ -166,79 +302,29 @@ export class FeesComponent implements OnInit {
 <head>
   <title>Receipt #${receipt.receiptId}</title>
   <style>
-    body {
-      font-family: monospace;
-      margin: 0;
-      padding: 20px 0;
-      background: #fff;
-    }
-    
-    /* Center the receipt container itself horizontally on the page */
-    .receipt-container {
-      width: 300px;
-      position: relative;
-      margin: 0 auto; /* Centers the 300px box on the printed page */
-      padding: 10px;
-      color: #000;
-      font-size: 12px;
-    }
-
-    /* WATERMARK LOGIC: Stretches to the exact height of the content layer, perfectly centering the text */
-    .watermark-layer {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 0;
-      overflow: hidden;
-      pointer-events: none;
-    }
-    .watermark-text {
-      transform: rotate(-30deg);
-      font-size: 24px;
-      font-weight: bold;
-      color: rgba(0,0,0,0.08);
-      white-space: nowrap;
-    }
-
-    /* Ensures content stays above the watermark */
-    .content-layer {
-      position: relative;
-      z-index: 1;
-      background: transparent;
-    }
-
-    .center { text-align: center; }
-    .right { text-align: right; }
-    .bold { font-weight: bold; }
+    body { font-family: monospace; margin: 0; padding: 20px 0; background: #fff; }
+    .receipt-container { width: 300px; position: relative; margin: 0 auto; padding: 10px; color: #000; font-size: 12px; }
+    .watermark-layer { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 0; overflow: hidden; pointer-events: none; }
+    .watermark-text { transform: rotate(-30deg); font-size: 24px; font-weight: bold; color: rgba(0,0,0,0.08); white-space: nowrap; }
+    .content-layer { position: relative; z-index: 1; background: transparent; }
+    .center { text-align: center; } .right { text-align: right; } .bold { font-weight: bold; }
     .divider { border-top: 1px dashed #000; margin: 8px 0; }
-    table { width: 100%; border-collapse: collapse; }
-    td { padding: 4px 0; }
+    table { width: 100%; border-collapse: collapse; } td { padding: 4px 0; }
   </style>
 </head>
 <body>
-  
   <div class="receipt-container">
-    
-    <div class="watermark-layer">
-      <div class="watermark-text">S.B. PUBLIC SCHOOL</div>
-    </div>
-    
+    <div class="watermark-layer"><div class="watermark-text">S.B. PUBLIC SCHOOL</div></div>
     <div class="content-layer">
       <div class="center bold" style="font-size:14px;">S. B. PUBLIC SCHOOL</div>
       <div class="center" style="font-size:11px;">Fee Receipt</div>
-
       <div class="divider"></div>
-
       <div>
         <div><span class="bold">Receipt:</span> #${receipt.receiptId}</div>
         <div><span class="bold">Date:</span> ${new Date(receipt.paymentDate).toLocaleDateString('en-IN')}</div>
         <div><span class="bold">Mode:</span> ${receipt.paymentMode}</div>
       </div>
-
       <div class="divider"></div>
-
       <div>
         <table>
           <tr><td class="bold">Student</td><td>: ${receipt.studentName}</td></tr>
@@ -247,40 +333,21 @@ export class FeesComponent implements OnInit {
           <tr><td>SR No</td><td>: ${receipt.srNumber || "-"}</td></tr>
         </table>
       </div>
-
       <div class="divider"></div>
-
       <table>
-        <thead>
-          <tr class="bold">
-            <td>Fee</td>
-            <td>Month</td>
-            <td class="right">Amt</td>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows}
-        </tbody>
+        <thead><tr class="bold"><td>Fee</td><td>Month</td><td class="right">Amt</td></tr></thead>
+        <tbody>${rows}</tbody>
       </table>
-
       <div class="divider"></div>
-
-      <div class="right bold" style="font-size: 14px;">
-        Total Paid: ₹${Number(receipt.totalPaid).toFixed(2)}
-      </div>
-      ${receipt.totalConcession > 0 ? `
-      <div class="right" style="font-size: 11px; color: #555; margin-top: 4px;">
-        Total Discount: ₹${Number(receipt.totalConcession).toFixed(2)}
-      </div>` : ''}
-
+      
+      <div class="right bold" style="font-size: 14px;">Total Paid: ₹${Number(receipt.totalPaid).toFixed(2)}</div>
+      ${receipt.pastDuesCleared > 0 ? `<div class="right bold" style="font-size: 12px; color: #ef4444; margin-top: 6px;">Past Dues Cleared: ₹${Number(receipt.pastDuesCleared).toFixed(2)}</div>` : ''}
+      ${receipt.totalConcession > 0 ? `<div class="right" style="font-size: 11px; color: #555; margin-top: 4px;">Total Discount: ₹${Number(receipt.totalConcession).toFixed(2)}</div>` : ''}
+      
       <div class="divider"></div>
-
-      <div class="center" style="font-size:10px;">
-        Thank You!
-      </div>
+      <div class="center" style="font-size:10px;">Thank You!</div>
     </div>
   </div>
-
 </body>
 </html>
 `);
@@ -290,40 +357,55 @@ export class FeesComponent implements OnInit {
 
   openStudentSearchModal(): void {
     this.isSearchModalOpen = true;
-    this.studentSearchQuery = '';
+    this.tempSelectedGrade = '';
+    this.tempSelectedStudent = null;
     this.studentSearchResults = [];
   }
 
-  closeStudentSearchModal(): void { this.isSearchModalOpen = false; }
-
-  selectStudentForPayment(student: any): void {
-    this.closeStudentSearchModal();
-    this.openRecordFeePanel(student.id, student.name);
+  closeStudentSearchModal(): void { 
+    this.isSearchModalOpen = false; 
   }
 
-  searchMasterStudents(): void {
-    if (this.studentSearchQuery.trim().length < 2) {
+  onGradeSelectedInModal(): void {
+    this.tempSelectedStudent = null;
+    if (!this.tempSelectedGrade) {
       this.studentSearchResults = [];
       return;
     }
-    this.feeService.searchStudents(this.studentSearchQuery).subscribe({
-      next: (res: any) => { this.studentSearchResults = res.data.content; },
-      error: () => this.notificationService.showError('Search failed.')
-    });
-  }
-  deleteReceipt(record: any): void {
-  const confirmDelete = window.confirm(`Are you sure you want to delete Receipt #${record.receiptId}? This will reverse the payment and restore the student's pending dues.`);
-  
-  if (confirmDelete) {
-    this.feeService.deleteTransaction(record.receiptId).subscribe({
-      next: () => {
-        this.notificationService.showSuccess('Receipt deleted and dues reverted successfully.');
-        this.loadData(); // Refresh the table and stats
+    
+    this.feeService.getStudentsByStandard(this.tempSelectedGrade).subscribe({
+      next: (res: any) => {
+        this.studentSearchResults = Array.isArray(res) ? res : (res.data || []);
+        this.cdr.detectChanges();
       },
-      error: (err) => {
-        this.notificationService.showError('Failed to delete the receipt.');
-      }
+      error: () => this.notificationService.showError('Failed to load students.')
     });
   }
-}
+
+  onStudentSelectedInModal(): void {
+    if (this.tempSelectedStudent) {
+      this.closeStudentSearchModal();
+      this.openRecordFeePanel(
+        this.tempSelectedStudent.id, 
+        this.tempSelectedStudent.name || this.tempSelectedStudent.studentName,
+        this.tempSelectedGrade
+      );
+    }
+  }
+
+  deleteReceipt(record: any): void {
+    const confirmDelete = window.confirm(`Are you sure you want to delete Receipt #${record.receiptId}? This will reverse the payment and restore the student's pending dues.`);
+    
+    if (confirmDelete) {
+      this.feeService.deleteTransaction(record.receiptId).subscribe({
+        next: () => {
+          this.notificationService.showSuccess('Receipt deleted and dues reverted successfully.');
+          this.loadData(); 
+        },
+        error: (err) => {
+          this.notificationService.showError('Failed to delete the receipt.');
+        }
+      });
+    }
+  }
 }
