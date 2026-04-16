@@ -1,5 +1,20 @@
 <div class="checkout-container">
-  
+  <div *ngIf="!isLoading && hasDues()" style="background: #fff; padding: 12px 16px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+    <div>
+      <h4 style="margin: 0; font-size: 14px; color: var(--text-main);">Fee Structure Type</h4>
+      <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">Select the fee structure to apply for this student.</p>
+    </div>
+    <div style="display: flex; gap: 16px;">
+      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+        <input type="radio" name="studentType" value="OLD" [(ngModel)]="studentAdmissionType" (change)="onStudentTypeChange()" style="accent-color: var(--primary-color);">
+        Old Student (Default)
+      </label>
+      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+        <input type="radio" name="studentType" value="NEW" [(ngModel)]="studentAdmissionType" (change)="onStudentTypeChange()" style="accent-color: var(--primary-color);">
+        New Student
+      </label>
+    </div>
+  </div>
   <div *ngIf="isLoading" class="empty-checkout">
     <span class="material-icons-round" style="font-size: 40px; color: var(--primary-color); animation: spin 1s linear infinite;">autorenew</span>
     <p>Loading dues...</p>

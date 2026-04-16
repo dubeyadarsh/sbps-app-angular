@@ -150,13 +150,22 @@ export class FeesComponent implements OnInit {
     });
   }
 
-  fetchDueReport(): void {
+fetchDueReport(): void {
     this.isReportLoading = true;
     const tillMonthParam = this.selectedTillMonth ? Number(this.selectedTillMonth) : undefined;
 
     this.feeService.getClassDueReport(this.selectedGrade, tillMonthParam).subscribe({
       next: (res: any) => {
-        this.dueReports = res.data || [];
+        let rawReports = res.data || [];
+        
+        // NEW FRONTEND CHECK: Filter out any items that end in ₹0 or ₹0.00
+        this.dueReports = rawReports.map((rep: any) => {
+          rep.dueBreakdown = rep.dueBreakdown.filter((item: string) => {
+            return !item.endsWith('₹0') && !item.endsWith('₹0.00');
+          });
+          return rep;
+        }).filter((rep: any) => rep.dueBreakdown.length > 0); // Hide student entirely if no dues are left
+
         this.isReportLoading = false;
         this.cdr.detectChanges();
       },
@@ -167,7 +176,6 @@ export class FeesComponent implements OnInit {
       }
     });
   }
-
   printDueReport(): void {
     const win = window.open('', '_blank');
     if (!win) return;
@@ -286,14 +294,14 @@ export class FeesComponent implements OnInit {
 
     const rows = receipt.lineItems.map((item: any) => {
       const concessionText = item.concessionAmount > 0 
-        ? `<br><small style="color:gray; font-size:10px;">(Discount: ₹${Number(item.concessionAmount).toFixed(2)})</small>` 
+        ? `<br><small style="color:gray; font-size:9px;">(Disc: ₹${Number(item.concessionAmount).toFixed(2)})</small>` 
         : '';
       
       return `
       <tr>
-        <td style="padding:8px;border-bottom:1px solid #eee;">${item.feeTypeName}${concessionText}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee;">${item.feeMonth}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee;text-align:right;">₹${Number(item.paidAmount).toFixed(2)}</td>
+        <td style="padding:6px 0; border-bottom:1px solid #eee;">${item.feeTypeName}${concessionText}</td>
+        <td style="padding:6px 0; border-bottom:1px solid #eee;">${item.feeMonth}</td>
+        <td style="padding:6px 0; border-bottom:1px solid #eee;text-align:right;">₹${Number(item.paidAmount).toFixed(2)}</td>
       </tr>`;
     }).join('');
 
@@ -302,50 +310,76 @@ export class FeesComponent implements OnInit {
 <head>
   <title>Receipt #${receipt.receiptId}</title>
   <style>
-    body { font-family: monospace; margin: 0; padding: 20px 0; background: #fff; }
-    .receipt-container { width: 300px; position: relative; margin: 0 auto; padding: 10px; color: #000; font-size: 12px; }
-    .watermark-layer { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 0; overflow: hidden; pointer-events: none; }
-    .watermark-text { transform: rotate(-30deg); font-size: 24px; font-weight: bold; color: rgba(0,0,0,0.08); white-space: nowrap; }
+    /* Force A4 Page without browser margins */
+    @page { size: A4; margin: 0; }
+    
+    body { 
+      font-family: monospace; 
+      margin: 0; 
+      padding: 0; 
+      background: #fff; 
+    }
+    
+    /* Strictly sized to 1/4 of an A4 page and locked to top-left */
+    .receipt-container { 
+      width: 105mm; 
+      height: 148mm; 
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      padding: 15px; 
+      box-sizing: border-box;
+      color: #000; 
+      font-size: 11px; 
+      overflow: hidden; 
+      /* Optional cut guide: border-right: 1px dashed #ccc; border-bottom: 1px dashed #ccc; */
+    }
+    
+    .watermark-layer { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 0; pointer-events: none; }
+    .watermark-text { transform: rotate(-30deg); font-size: 20px; font-weight: bold; color: rgba(0,0,0,0.06); white-space: nowrap; }
     .content-layer { position: relative; z-index: 1; background: transparent; }
+    
     .center { text-align: center; } .right { text-align: right; } .bold { font-weight: bold; }
-    .divider { border-top: 1px dashed #000; margin: 8px 0; }
-    table { width: 100%; border-collapse: collapse; } td { padding: 4px 0; }
+    .divider { border-top: 1px dashed #000; margin: 6px 0; }
+    table { width: 100%; border-collapse: collapse; } td { padding: 2px 0; }
   </style>
 </head>
 <body>
   <div class="receipt-container">
     <div class="watermark-layer"><div class="watermark-text">S.B. PUBLIC SCHOOL</div></div>
+    
     <div class="content-layer">
-      <div class="center bold" style="font-size:14px;">S. B. PUBLIC SCHOOL</div>
-      <div class="center" style="font-size:11px;">Fee Receipt</div>
+      <div class="center bold" style="font-size:13px;">S. B. PUBLIC SCHOOL</div>
+      <div class="center" style="font-size:10px;">Fee Receipt</div>
       <div class="divider"></div>
-      <div>
-        <div><span class="bold">Receipt:</span> #${receipt.receiptId}</div>
+      
+      <div style="display:flex; justify-content:space-between; font-size: 10px;">
+        <div><span class="bold">Rct:</span> #${receipt.receiptId}</div>
         <div><span class="bold">Date:</span> ${new Date(receipt.paymentDate).toLocaleDateString('en-IN')}</div>
         <div><span class="bold">Mode:</span> ${receipt.paymentMode}</div>
       </div>
+      
       <div class="divider"></div>
-      <div>
-        <table>
-          <tr><td class="bold">Student</td><td>: ${receipt.studentName}</td></tr>
-          <tr><td>Father</td><td>: ${receipt.fatherName}</td></tr>
-          <tr><td>Class</td><td>: ${receipt.grade || "-"}</td></tr>
-          <tr><td>SR No</td><td>: ${receipt.srNumber || "-"}</td></tr>
-        </table>
-      </div>
-      <div class="divider"></div>
-      <table>
-        <thead><tr class="bold"><td>Fee</td><td>Month</td><td class="right">Amt</td></tr></thead>
-        <tbody>${rows}</tbody>
+      <table style="font-size: 10px;">
+        <tr><td class="bold" width="45">Student</td><td>: ${receipt.studentName}</td></tr>
+        <tr><td class="bold">Father</td><td>: ${receipt.fatherName}</td></tr>
+        <tr><td class="bold">Class</td><td>: ${receipt.grade || "-"}</td></tr>
+        <tr><td class="bold">SR No</td><td>: ${receipt.srNumber || "-"}</td></tr>
       </table>
       <div class="divider"></div>
       
-      <div class="right bold" style="font-size: 14px;">Total Paid: ₹${Number(receipt.totalPaid).toFixed(2)}</div>
-      ${receipt.pastDuesCleared > 0 ? `<div class="right bold" style="font-size: 12px; color: #ef4444; margin-top: 6px;">Past Dues Cleared: ₹${Number(receipt.pastDuesCleared).toFixed(2)}</div>` : ''}
-      ${receipt.totalConcession > 0 ? `<div class="right" style="font-size: 11px; color: #555; margin-top: 4px;">Total Discount: ₹${Number(receipt.totalConcession).toFixed(2)}</div>` : ''}
+      <table>
+        <thead><tr class="bold"><td>Fee</td><td>Period</td><td class="right">Amt</td></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
       
       <div class="divider"></div>
-      <div class="center" style="font-size:10px;">Thank You!</div>
+      <div class="right bold" style="font-size: 13px;">Total Paid: ₹${Number(receipt.totalPaid).toFixed(2)}</div>
+      ${receipt.pastDuesCleared > 0 ? `<div class="right bold" style="font-size: 11px; color: #555; margin-top: 4px;">Remaining Dues: ₹${Number(receipt.pastDuesCleared).toFixed(2)}</div>` : ''}
+      ${receipt.totalConcession > 0 ? `<div class="right" style="font-size: 10px; color: #777; margin-top: 2px;">Total Discount: ₹${Number(receipt.totalConcession).toFixed(2)}</div>` : ''}
+      
+      <div class="divider"></div>
+      <div class="center" style="font-size:9px; margin-top: 8px;">System Generated Receipt</div>
     </div>
   </div>
 </body>
@@ -408,4 +442,5 @@ export class FeesComponent implements OnInit {
       });
     }
   }
+  
 }

@@ -75,14 +75,16 @@ export class FeeCheckoutComponent implements OnInit {
         }
         
         this.groupedDues = pendingDues.reduce((acc: any, due: any) => {
-          due.selected = false;
-          due.payingAmount = due.balanceDue;
-          due.concessionAmount = 0;
-          
-          if (!acc[due.feeTypeName]) acc[due.feeTypeName] = [];
-          acc[due.feeTypeName].push(due);
-          return acc;
-        }, {});
+  due.selected = false;
+  // Initialize with the currently selected type
+  due.balanceDue = this.studentAdmissionType === 'NEW' ? (due.newAmount || due.balanceDue) : (due.oldAmount || due.balanceDue);
+  due.payingAmount = due.balanceDue;
+  due.concessionAmount = 0;
+  
+  if (!acc[due.feeTypeName]) acc[due.feeTypeName] = [];
+  acc[due.feeTypeName].push(due);
+  return acc;
+}, {});
 
         for (const key in this.groupedDues) {
           this.groupedDues[key].sort((a: any, b: any) => (a.dueMonth || 0) - (b.dueMonth || 0));
@@ -285,4 +287,30 @@ export class FeeCheckoutComponent implements OnInit {
     const months = ["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
     return months[m - 1] || 'Unknown';
   }
+  // Add this property to your class
+studentAdmissionType: 'OLD' | 'NEW' = 'OLD';
+
+// Add this function to handle the toggle
+onStudentTypeChange() {
+  for (const key in this.groupedDues) {
+    for (const due of this.groupedDues[key]) {
+      // Only swap amounts for items that actually have a difference (like Admission Fees)
+      if (due.oldAmount !== undefined && due.newAmount !== undefined) {
+        // Swap the balance due based on selection
+        due.balanceDue = this.studentAdmissionType === 'NEW' ? due.newAmount : due.oldAmount;
+        
+        // Reset the paying amount to match the new balance
+        due.payingAmount = due.balanceDue;
+        
+        // Reset concession
+        due.concessionAmount = 0;
+      }
+    }
+  }
+  this.calculateTotals();
+}
+
+// In your loadDues() subscription, ensure the mapping preserves the new/old amounts
+// Update this specific block inside loadDues():
+
 }
