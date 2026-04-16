@@ -367,16 +367,18 @@ fetchDueReport(): void {
         <tr><td class="bold">SR No</td><td>: ${receipt.srNumber || "-"}</td></tr>
       </table>
       <div class="divider"></div>
-      
-      <table>
+    <table>
         <thead><tr class="bold"><td>Fee</td><td>Period</td><td class="right">Amt</td></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       
       <div class="divider"></div>
+      
       <div class="right bold" style="font-size: 13px;">Total Paid: ₹${Number(receipt.totalPaid).toFixed(2)}</div>
-      ${receipt.pastDuesCleared > 0 ? `<div class="right bold" style="font-size: 11px; color: #555; margin-top: 4px;">Remaining Dues: ₹${Number(receipt.pastDuesCleared).toFixed(2)}</div>` : ''}
+      
       ${receipt.totalConcession > 0 ? `<div class="right" style="font-size: 10px; color: #777; margin-top: 2px;">Total Discount: ₹${Number(receipt.totalConcession).toFixed(2)}</div>` : ''}
+      
+      <div class="right bold" style="font-size: 12px; margin-top: 4px;">Remaining Due: ₹${Number(receipt.remainingDue).toFixed(2)}</div>
       
       <div class="divider"></div>
       <div class="center" style="font-size:9px; margin-top: 8px;">System Generated Receipt</div>
