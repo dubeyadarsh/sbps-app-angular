@@ -1,4 +1,4 @@
-import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; 
 import { jsPDF } from 'jspdf';
@@ -8,6 +8,8 @@ import { ApiService } from '../../services/api-service';
 import { ChangeDetectorRef } from '@angular/core';
 import { ACADEMIC_YEAR } from '../../services/constant';
 import { baseApiUrl } from '../../constants/constant';
+import autoTable from 'jspdf-autotable'; // Add this import at the top
+
 export interface Student {
   id: number; 
   srNumber: string;
@@ -610,4 +612,168 @@ private truncate(text: string, max: number): string {
   return text.length > max ? text.substring(0, max - 1) + '…' : text;
 }
 
+// --- Add to your component class variables ---
+showRosterModal: boolean = false;
+selectedClassesForRoster: string[] = [];
+isGeneratingRoster: boolean = false;
+
+// --- Add these methods ---
+openRosterModal(): void {
+  this.selectedClassesForRoster = []; // Reset selection
+  this.showRosterModal = true;
+}
+
+closeRosterModal(): void {
+  this.showRosterModal = false;
+}
+
+toggleRosterClass(gradeValue: string): void {
+  const index = this.selectedClassesForRoster.indexOf(gradeValue);
+  if (index > -1) {
+    this.selectedClassesForRoster.splice(index, 1); // Remove if already selected
+  } else {
+    this.selectedClassesForRoster.push(gradeValue); // Add if not selected
+  }
+}
+// --- Add these new methods for Select All logic ---
+
+// Getter to dynamically check if all classes are currently selected
+get isAllSelected(): boolean {
+  return this.standards.length > 0 && 
+         this.selectedClassesForRoster.length === this.standards.length;
+}
+
+// Function to handle the Select All checkbox toggle
+toggleAllRosterClasses(event: any): void {
+  const isChecked = event.target.checked;
+  
+  if (isChecked) {
+    // Extract all 'value' properties from the standards array
+    this.selectedClassesForRoster = this.standards.map(std => std.value);
+  } else {
+    // Clear the selection
+    this.selectedClassesForRoster = [];
+  }
+}
+async generateClassRosters(): Promise<void> {
+  if (this.selectedClassesForRoster.length === 0) return;
+
+  this.isGeneratingRoster = true;
+  this.notificationService.showSuccess('Fetching data and compiling class lists...');
+
+  try {
+    // 1. Make a SINGLE API call for all selected classes
+    const response: any = await this.studentService.getRosterByStandards(this.selectedClassesForRoster).toPromise();
+    const allRosterStudents: Student[] = response?.data || [];
+
+    if (allRosterStudents.length === 0) {
+      this.notificationService.showError('No students found for the selected classes.');
+      this.isGeneratingRoster = false;
+      return;
+    }
+
+    // 2. Group the flat array of students by their standard
+    const studentsByClass = allRosterStudents.reduce((acc, student) => {
+      if (!acc[student.standard]) acc[student.standard] = [];
+      acc[student.standard].push(student);
+      return acc;
+    }, {} as Record<string, Student[]>);
+
+    // 3. Initialize PDF in LANDSCAPE ('l') mode to fit the extra columns
+    const pdf = new jsPDF('l', 'mm', 'a4'); 
+    
+    // 4. Sort selected classes
+    const sortedClasses = this.selectedClassesForRoster.sort((a, b) => 
+      this.standards.findIndex(s => s.value === a) - this.standards.findIndex(s => s.value === b)
+    );
+
+    // 5. Generate a page for each class
+    let pageAdded = false;
+
+    for (let i = 0; i < sortedClasses.length; i++) {
+      const grade = sortedClasses[i];
+      const studentsInClass = studentsByClass[grade] || [];
+
+      if (studentsInClass.length === 0) continue;
+      
+      if (pageAdded) {
+        pdf.addPage();
+      }
+
+      // Draw Header for the specific class
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(0, 0, 128); 
+      pdf.text(`S.B. PUBLIC SCHOOL - Class Roster`, 14, 20);
+      
+      pdf.setFontSize(12);
+      pdf.setTextColor(100, 116, 139);
+      pdf.text(`Grade: ${grade} | Total Students: ${studentsInClass.length} | Session: ${this.academicYear}`, 14, 28);
+
+      // --- UPDATED COLUMNS AND DATA MAPPING ---
+const tableColumn = ["S.No.", "SR No", "Student Name", "Father's Name", "Phone Number", "DOB", "Added On", "Address"];      
+      const tableRows = studentsInClass.map((s, index) => [
+        index + 1, // This generates 1, 2, 3, etc. for each row
+        s.srNumber || '-',
+        s.name,
+        s.fathersName || '-',
+        s.phoneNumber || '-',
+        s.dob ? new Date(s.dob).toLocaleDateString() : '-',
+        s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '-',
+        s.address || '-' 
+      ]);
+
+      // Draw the table
+      autoTable(pdf, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 35, 
+        theme: 'grid',
+        headStyles: { fillColor: [0, 0, 128] }, 
+        styles: { fontSize: 9, cellPadding: 3 },
+        columnStyles: {
+          0: { cellWidth: 12, halign: 'center' }, // Keeps the S.No. column narrow and centered
+          7: { cellWidth: 60 } // Address moved to index 7 since we added a column at the start
+        }
+      });
+
+      pageAdded = true;
+    }
+
+    // 6. Save the final multi-page PDF
+    pdf.save(`Class_Rosters_${this.academicYear}.pdf`);
+    this.notificationService.showSuccess('Class lists downloaded successfully!');
+
+  } catch (error) {
+    console.error('Error generating rosters:', error);
+    this.notificationService.showError('Failed to fetch data and generate class lists.');
+  } finally {
+    this.isGeneratingRoster = false;
+    this.closeRosterModal();
+  }
+}
+// --- Dropdown State ---
+  activeDropdown: string | null = null;
+
+  toggleDropdown(menu: string): void {
+    if (this.activeDropdown === menu) {
+      this.activeDropdown = null; // Close if already open
+    } else {
+      this.activeDropdown = menu; // Open the clicked menu
+    }
+  }
+
+  closeDropdown(): void {
+    this.activeDropdown = null;
+  }
+
+  // Closes the dropdown if the user clicks anywhere outside of it
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    // If the click wasn't inside a dropdown container, close any open dropdowns
+    if (!target.closest('.custom-dropdown')) {
+      this.closeDropdown();
+    }
+  }
 }

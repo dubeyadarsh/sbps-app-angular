@@ -284,4 +284,10 @@ getStudentPaidTransactions(studentId: number): Observable<any> {
     }
     return this.http.get<any>(url);
   }
+  // Add this to api-service.ts
+public getRosterByStandards(standards: string[]) {
+  // Joins the array into a comma-separated string: "LKG,UKG,1"
+  const params = { standards: standards.join(',') }; 
+  return this.http.get(`${baseApiUrl}api/students/roster`, { params });
+}
 }
