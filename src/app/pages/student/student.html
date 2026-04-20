@@ -10,20 +10,18 @@
     <div class="premium-toolbar">
       <div class="toolbar-left">
        <div class="custom-select-wrapper" [class.active-select]="selectedGrade">
-  <select 
-    class="premium-select" 
-    [(ngModel)]="selectedGrade" 
-    (change)="onFilterChange()"
-  >
-    <option value="">-- Select --</option>
-
-    <option *ngFor="let std of standards" [value]="std.value">
-      {{ std.label }}
-    </option>
-
-  </select>
-  <span class="material-icons-round custom-arrow">expand_more</span>
-</div>
+          <select 
+            class="premium-select" 
+            [(ngModel)]="selectedGrade" 
+            (change)="onFilterChange()"
+          >
+            <option value="">-- Select --</option>
+            <option *ngFor="let std of standards" [value]="std.value">
+              {{ std.label }}
+            </option>
+          </select>
+          <span class="material-icons-round custom-arrow">expand_more</span>
+        </div>
         <div class="premium-search" [class.disabled]="!selectedGrade">
           <span class="material-icons-round search-icon">search</span>
           <input type="text" placeholder="Search by name, phone..." 
@@ -32,50 +30,48 @@
       </div>
 
       <div class="toolbar-right">
-  
-  <div class="custom-dropdown">
-    <button class="btn-secondary" (click)="toggleDropdown('reports')">
-      <span class="material-icons-round">analytics</span> Reports
-      <span class="material-icons-round" style="font-size: 18px; margin-left: -4px;">expand_more</span>
-    </button>
-    
-    <div class="dropdown-menu" [class.show]="activeDropdown === 'reports'">
-      <button class="dropdown-item" 
-              [disabled]="!selectedGrade || allStudents.length === 0 || isGenerating" 
-              (click)="generateBulkIDs(); closeDropdown()">
-        <span class="material-icons-round">badge</span> 
-        {{ isGenerating ? 'Generating...' : 'Print ID Cards' }}
-      </button>
-      
-      <button class="dropdown-item" (click)="openRosterModal(); closeDropdown()">
-        <span class="material-icons-round">list_alt</span> Print Class Lists
-      </button>
-    </div>
-  </div>
+        <div class="custom-dropdown">
+          <button class="btn-secondary" (click)="toggleDropdown('reports')">
+            <span class="material-icons-round">analytics</span> Reports
+            <span class="material-icons-round" style="font-size: 18px; margin-left: -4px;">expand_more</span>
+          </button>
+          
+          <div class="dropdown-menu" [class.show]="activeDropdown === 'reports'">
+            <button class="dropdown-item" 
+                    [disabled]="!selectedGrade || allStudents.length === 0 || isGenerating" 
+                    (click)="generateBulkIDs(); closeDropdown()">
+              <span class="material-icons-round">badge</span> 
+              {{ isGenerating ? 'Generating...' : 'Print ID Cards' }}
+            </button>
+            
+            <button class="dropdown-item" (click)="openRosterModal(); closeDropdown()">
+              <span class="material-icons-round">list_alt</span> Print Class Lists
+            </button>
+          </div>
+        </div>
 
-  <div class="custom-dropdown">
-    <button class="btn-secondary" (click)="toggleDropdown('import')">
-      <span class="material-icons-round">cloud_upload</span> Bulk Import
-      <span class="material-icons-round" style="font-size: 18px; margin-left: -4px;">expand_more</span>
-    </button>
-    
-    <div class="dropdown-menu" [class.show]="activeDropdown === 'import'">
-      <button class="dropdown-item" (click)="downloadTemplate(); closeDropdown()">
-        <span class="material-icons-round">download</span> Download Template
-      </button>
-      <button class="dropdown-item" (click)="fileInput.click(); closeDropdown()">
-        <span class="material-icons-round">upload_file</span> Upload Excel
-      </button>
-    </div>
-  </div>
-  
-  <input type="file" #fileInput (change)="onFileSelected($event)" accept=".xlsx" style="display: none;">
+        <div class="custom-dropdown">
+          <button class="btn-secondary" (click)="toggleDropdown('import')">
+            <span class="material-icons-round">cloud_upload</span> Bulk Import
+            <span class="material-icons-round" style="font-size: 18px; margin-left: -4px;">expand_more</span>
+          </button>
+          
+          <div class="dropdown-menu" [class.show]="activeDropdown === 'import'">
+            <button class="dropdown-item" (click)="downloadTemplate(); closeDropdown()">
+              <span class="material-icons-round">download</span> Download Template
+            </button>
+            <button class="dropdown-item" (click)="fileInput.click(); closeDropdown()">
+              <span class="material-icons-round">upload_file</span> Upload Excel
+            </button>
+          </div>
+        </div>
+        
+        <input type="file" #fileInput (change)="onFileSelected($event)" accept=".xlsx" style="display: none;">
 
-  <button class="btn-primary" style="background-color: #000080; color: white;" (click)="openAddStudentModal()">
-    <span class="material-icons-round">person_add</span> Add Student
-  </button>
-
-</div>
+        <button class="btn-primary" style="background-color: #000080; color: white;" (click)="openAddStudentModal()">
+          <span class="material-icons-round">person_add</span> Add Student
+        </button>
+      </div>
     </div>
 
     <div class="table-responsive">
@@ -109,7 +105,6 @@
           <tr *ngFor="let student of pagedStudents">
             <td>
               <div class="user-cell">
-                <!-- <img [src]="student.avatar" alt="avatar" class="avatar-sm" crossorigin="anonymous"> -->
                 <div class="user-cell-info">
                   <span class="user-name">{{ student.name }}</span>
                   <span class="user-email"><span class="material-icons-round" style="font-size: 11px;">phone</span> {{ student.phoneNumber || 'N/A' }}</span>
@@ -187,10 +182,9 @@
         <label>Standard <span class="required">*</span></label>
         <select class="form-control" [class.is-invalid]="formErrors.standard" [(ngModel)]="currentStudent.standard">
           <option value="">-- Select --</option>
-
-    <option *ngFor="let std of standards" [value]="std.value">
-      {{ std.label }}
-    </option>
+          <option *ngFor="let std of standards" [value]="std.value">
+            {{ std.label }}
+          </option>
         </select>
         <small class="error-text" *ngIf="formErrors.standard">{{ formErrors.standard }}</small>
       </div>
@@ -263,20 +257,21 @@
     <div class="id-card-wrapper" #idCardElement *ngIf="generatedStudent">
       
       <div class="id-card-header">
-        <h4>S.B. PUBLIC SCHOOL</h4>
-        <p>Identity Card {{academicYear}}</p>
+        <img [src]="schoolLogoBase64" class="id-school-logo" crossorigin="anonymous">
+        <div class="id-header-text">
+          <h4>S.B. PUBLIC SCHOOL</h4>
+          <p class="id-subtitle">Identity Card {{academicYear}}</p>
+          <p class="id-header-contact">{{ schoolContacts }}</p>
+        </div>
       </div>
 
-   <div class="id-card-body">
-        
+      <div class="id-card-body">
         <div class="photo-row">
           <div class="side-info">
             <span class="red-label">SESSION</span>
             <span class="black-val">2025 - 26</span>
           </div>
-          
           <img [src]="generatedStudent.avatar || defaultAvatar" alt="Student Photo" class="id-photo" crossorigin="anonymous">
-          
           <div class="side-info">
             <span class="red-label">S.R. No.</span>
             <span class="black-val">{{ generatedStudent.srNumber }}</span>
@@ -288,18 +283,20 @@
         
         <div class="id-details-grid">
           <div class="id-row"><span class="id-label">F. Name:</span> <span class="id-val">{{ generatedStudent.fathersName }}</span></div>
+          <div class="id-row"><span class="id-label">Mother:</span> <span class="id-val">{{ generatedStudent.mothersName }}</span></div>
           <div class="id-row"><span class="id-label">DOB:</span> <span class="id-val">{{ generatedStudent.dob | date:'dd-MM-yyyy' }}</span></div>
           <div class="id-row"><span class="id-label">Phone:</span> <span class="id-val">{{ generatedStudent.phoneNumber }}</span></div>
         </div>
       </div>
       
       <div class="id-card-footer">
-        <div class="id-address"><strong>Address:</strong> {{ generatedStudent.address || 'Not provided' }}</div>
-        <div class="signature-line">Principal Signature</div>
+        <div class="id-address"><strong>Add:</strong> {{ generatedStudent.address || 'Not provided' }}</div>
+        <div class="signature-section">
+          <img [src]="principalSignBase64" class="id-signature-img" crossorigin="anonymous">
+          <div class="signature-text">PRINCIPAL SIGN</div>
+        </div>
       </div>
 
-  
-      
     </div>
 
     <div class="id-modal-actions">
@@ -310,13 +307,10 @@
     </div>
 
   </div>
-
 </div>
-<!-- KEEP THIS OUTSIDE ANY *ngIf -->
 
 <div class="id-modal-backdrop" *ngIf="showRosterModal">
   <div class="id-modal-content" style="max-width: 500px;">
-    
     <div class="id-modal-header">
       <h3>Generate Class-wise Lists</h3>
       <button class="icon-btn-small" (click)="closeRosterModal()">
@@ -324,26 +318,21 @@
       </button>
     </div>
 
-  <div class="panel-body" style="width: 100%; padding: 0;">
+    <div class="panel-body" style="width: 100%; padding: 0;">
       <p class="text-muted" style="margin-top: 0; font-size: 14px;">
         Select the classes you want to generate lists for. Each class will start on a new page.
       </p>
       
       <div style="margin-top: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
         <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--primary-color);">
-          <input type="checkbox" 
-                 [checked]="isAllSelected"
-                 (change)="toggleAllRosterClasses($event)">
+          <input type="checkbox" [checked]="isAllSelected" (change)="toggleAllRosterClasses($event)">
           Select All Classes
         </label>
       </div>
 
       <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px;">
-        <label *ngFor="let std of standards" 
-               style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
-          <input type="checkbox" 
-                 [checked]="selectedClassesForRoster.includes(std.value)"
-                 (change)="toggleRosterClass(std.value)">
+        <label *ngFor="let std of standards" style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+          <input type="checkbox" [checked]="selectedClassesForRoster.includes(std.value)" (change)="toggleRosterClass(std.value)">
           {{ std.label }}
         </label>
       </div>
@@ -351,14 +340,11 @@
 
     <div class="id-modal-actions" style="margin-top: 24px;">
       <button class="btn-secondary" (click)="closeRosterModal()">Cancel</button>
-      <button class="btn-primary" 
-              [disabled]="selectedClassesForRoster.length === 0 || isGeneratingRoster"
-              (click)="generateClassRosters()">
+      <button class="btn-primary" [disabled]="selectedClassesForRoster.length === 0 || isGeneratingRoster" (click)="generateClassRosters()">
         <span class="material-icons-round" *ngIf="!isGeneratingRoster">print</span>
         <span class="spinner-small" *ngIf="isGeneratingRoster"></span>
         {{ isGeneratingRoster ? 'Generating...' : 'Generate PDF' }}
       </button>
     </div>
-
   </div>
 </div>

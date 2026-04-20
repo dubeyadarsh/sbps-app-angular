@@ -16,3 +16,5 @@
   { label: 'Grade 10', value: '10' },
   { label: 'Grade 11', value: '11' },
 ];
+
+export const SCHOOL_CONTACTS = 'Ph: 9559351234, 9648796060'; 
