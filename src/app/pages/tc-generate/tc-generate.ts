@@ -34,7 +34,7 @@ schoolLogo: string = SCHOOL_LOGO_BASE64;
   showPreview = false;
   
   promotedClassOptions: string[] = [
-    'Not Promoted', 'First (I)', 'Second (II)', 'Third (III)', 'Fourth (IV)', 
+    'Not Promoted', 'LKG','UKG','First (I)', 'Second (II)', 'Third (III)', 'Fourth (IV)', 
     'Fifth (V)', 'Sixth (VI)', 'Seventh (VII)', 'Eighth (VIII)', 'Ninth (IX)', 
     'Tenth (X)', 'Eleventh (XI)', 'Twelfth (XII)', 'Higher Education'
   ];
@@ -243,61 +243,74 @@ printDocument() {
         <head>
           <title>Print Transfer Certificate</title>
           <style>
-            /* STRICT A4 COMPRESSION RULES */
+            /* STRICT A4 FITTING RULES */
             @page { size: A4 portrait; margin: 0; }
             body { 
               font-family: 'Times New Roman', Times, serif; 
               margin: 0; 
-              padding: 18mm 18mm; /* Reduced top margin to pull content up */
+              padding: 5mm 5mm; 
               background: white; 
               color: black;
               -webkit-print-color-adjust: exact; 
               print-color-adjust: exact; 
+              box-sizing: border-box;
+            }
+
+            /* THE NEW WHOLE-PAGE BORDER */
+            .page-border {
+              border: 2px solid #000;
+              padding: 15px 15px;
+              /* 275mm guarantees the border stretches almost the entire 297mm A4 height without spilling to page 2 */
+              min-height: 278mm; 
+              box-sizing: border-box;
+              position: relative;
             }
             
             /* Header */
-            .tc-official-header { margin-bottom: 8px; } 
-            .header-grid { display: grid; grid-template-columns: 100px 1fr 100px; align-items: center; margin-bottom: 6px; }
+            .tc-official-header { margin-bottom: 15px; } 
+            .header-grid { display: grid; grid-template-columns: 110px 1fr 110px; align-items: center; margin-bottom: 10px; }
             .header-logo-left, .header-logo-right { display: flex; justify-content: center; align-items: center; }
-            .official-logo { width: 85px; height: auto; object-fit: contain; }
+            .official-logo { width: 95px; height: auto; object-fit: contain; }
             .header-center-content { display: flex; flex-direction: column; align-items: center; text-align: center; }
-            .school-name { font-size: 28px; font-weight: 700; margin: 0 0 2px 0; letter-spacing: 1px; text-transform: uppercase; }
-            .school-subtitle { font-size: 11px; font-weight: 700; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; }
-            .school-address { font-size: 13px; font-style: italic; margin: 0 0 4px 0; }
-            .school-meta-line { display: flex; justify-content: center; gap: 24px; font-size: 12px; margin-top: 2px; }
+            .school-name { font-size: 32px; font-weight: 700; margin: 0 0 4px 0; letter-spacing: 1px; text-transform: uppercase; }
+            .school-subtitle { font-size: 13px; font-weight: 700; margin: 0 0 3px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+            .school-address { font-size: 15px; font-style: italic; margin: 0 0 6px 0; }
+            .school-meta-line { display: flex; justify-content: center; gap: 24px; font-size: 13px; margin-top: 4px; }
             .header-divider { border-top: 3px solid #000; border-bottom: 1px solid #000; height: 2px; margin: 0 auto; width: 100%; }
 
             /* Title */
-            .tc-title-bar { margin: 12px 0; text-align: center; } 
-            .tc-title-bar h2 { display: inline-block; margin: 0; font-size: 16px; font-weight: bold; letter-spacing: 1.5px; border: 1.5px solid #000; padding: 4px 25px; border-radius: 4px; background-color: #e5e5e5 !important; }
+            .tc-title-bar { margin: 20px 0; text-align: center; } 
+            .tc-title-bar h2 { display: inline-block; margin: 0; font-size: 18px; font-weight: bold; letter-spacing: 1.5px; border: 1.5px solid #000; padding: 6px 30px; border-radius: 4px; background-color: #e5e5e5 !important; }
 
             /* ID Bars */
-            .tc-meta-bar, .tc-id-bar { display: flex; justify-content: space-between; padding: 4px 15px; font-size: 13px; }
-            .tc-id-bar { border-top: 1px solid #000; margin-bottom: 8px; }
+            .tc-meta-bar, .tc-id-bar { display: flex; justify-content: space-between; padding: 6px 15px; font-size: 14px; }
+            .tc-id-bar { border-top: 1px solid #000; margin-bottom: 10px; }
 
-            /* 24-Point Body Grid - COMPACTED FOR ONE PAGE */
-            .tc-body-grid { padding: 5px 5px; font-size: 14px; } /* Slightly smaller font */
-            .t-row { display: grid; grid-template-columns: 25px 380px 15px 1fr; margin-bottom: 6.5px; align-items: start; } /* Halved the row margin */
-            .multi-line { margin-bottom: 8px; }
+            /* 24-Point Body Grid */
+            .tc-body-grid { padding: 10px 5px; font-size: 13px; } 
+            .t-row { display: grid; grid-template-columns: 25px 380px 15px 1fr; margin-bottom: 11px; align-items: start; } 
+            .multi-line { margin-bottom: 10px; }
             .t-num { text-align: right; padding-right: 5px; }
             .t-lbl { padding-right: 10px; }
             .t-col { text-align: center; }
             .t-val { font-weight: 500; }
-            .t-val.bold { font-weight: bold; font-size: 15px; }
+            .t-val.bold { font-weight: bold; font-size: 16px; }
             
             .flex-between { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; }
             .sub-text { padding-left: 15px; white-space: nowrap; }
 
-            /* Footer - TIGHTENED */
-            .tc-footer { margin-top: 15px; padding: 0 10px; } /* Pulled up from 60px */
-            .declaration { text-align: center; font-style: italic; font-size: 13px; margin-bottom: 35px; padding: 0 15px; line-height: 1.3; } /* Pulled up from 50px */
+            /* Footer */
+            .tc-footer { margin-top: 35px; padding: 0 10px; } 
+            .declaration { text-align: center; font-style: italic; font-size: 13.5px; margin-bottom: 35px; padding: 0 20px; } 
             .signature-row { display: flex; justify-content: space-between; align-items: flex-end; }
-            .date-box { font-size: 14px; }
-            .sig-box { font-size: 14px; font-weight: bold; }
+            .date-box { font-size: 13px; }
+            .sig-box { font-size: 13px; font-weight: bold; }
           </style>
         </head>
         <body>
-          ${printContents}
+          <div class="page-border">
+            ${printContents}
+          </div>
           <script>
             window.onload = function() {
               setTimeout(function() {
