@@ -1,0 +1,471 @@
+<div class="tc-workspace no-print" *ngIf="!showPreview">
+
+  <div class="top-control-bar">
+    <div style="display:flex; align-items:flex-end; gap:12px; flex-wrap:nowrap;">
+
+      <div style="flex: 0 0 150px;">
+        <label class="pro-label">
+          <span class="material-icons-round" style="font-size:13px;">school</span>
+          Class
+        </label>
+        <div class="select-wrapper">
+          <select class="pro-input" [(ngModel)]="selectedStandard" (ngModelChange)="onStandardChange($event)">
+            <option value="" disabled selected>Choose class…</option>
+            <option *ngFor="let std of standards" [value]="std">Class {{ std }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="flex:1; min-width:0;">
+        <label class="pro-label">
+          <span class="material-icons-round" style="font-size:13px;">person</span>
+          Student
+          <span *ngIf="isLoadingStudents"
+                class="spinner-border spinner-border-sm text-primary"
+                style="width:10px;height:10px;border-width:2px;margin-left:4px;">
+          </span>
+        </label>
+        <div class="select-wrapper">
+          <select class="pro-input" [(ngModel)]="selectedStudentId" (ngModelChange)="onStudentChange($event)" [disabled]="!selectedStandard || isLoadingStudents">
+            <option value="" disabled>
+              {{ isLoadingStudents ? 'Loading roster...' : 'Select student...' }}
+            </option>
+            <option *ngFor="let student of studentsList" [value]="student.id">
+              {{ student.name }} — SR: {{ student.srNumber }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="isLoadingData">
+    <div class="spinner-border text-primary" style="width:2rem;height:2rem;border-width:3px;"></div>
+    <p>Fetching student record…</p>
+  </div>
+
+  <div class="pro-card fade-in" *ngIf="studentData && !isLoadingData">
+
+    <div class="compact-summary-banner">
+      <div style="display:flex; align-items:center; gap:14px;">
+        
+        <div class="summary-avatar-small">
+          <span>{{ studentData.name.charAt(0) | uppercase }}</span>
+        </div>
+        
+        <div>
+          <p class="student-name-text">{{ studentData.name }}</p>
+          <div class="summary-meta-small">
+            <span class="meta-pill">
+              <span class="material-icons-round" style="font-size:13px; color: var(--accent);">class</span>
+              Class <strong>{{ studentData.standard }}</strong>
+            </span>
+            <span class="meta-sep">·</span>
+            <span class="meta-pill">SR <strong>{{ studentData.srNumber || 'N/A' }}</strong></span>
+            <span class="meta-sep">·</span>
+            <span class="meta-pill">DOB <strong>{{ studentData.dob | date:'dd MMM yyyy' }}</strong></span>
+          </div>
+        </div>
+        
+        <div style="margin-left:auto;" *ngIf="tcData?.id">
+          <span class="saved-badge">
+            <span class="material-icons-round" style="font-size:14px;">check_circle</span>
+            Saved Record
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pro-card-body">
+
+      <div class="section-header">
+        <h6 class="section-title">
+          <span class="material-icons-round section-icon">description</span>
+          Certificate Details
+        </h6>
+      </div>
+
+      <form [formGroup]="tcForm" (ngSubmit)="generatePreview()">
+        <div class="form-grid">
+
+          <div class="field-group-label col-12">
+            <span class="material-icons-round" style="font-size:12px;">info</span>
+            Student Background
+          </div>
+
+          <div class="col-4">
+            <label class="pro-label">Nationality</label>
+            <input type="text" formControlName="nationality" class="pro-input" placeholder="e.g. Indian">
+          </div>
+
+          <div class="col-4">
+            <label class="pro-label">Category</label>
+            <div class="select-wrapper">
+              <select formControlName="category" class="pro-input">
+                <option value="General">General</option>
+                <option value="OBC">OBC</option>
+                <option value="SC">SC</option>
+                <option value="ST">ST</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="col-4">
+            <label class="pro-label">First Admission Date</label>
+            <input type="date" formControlName="dateOfAdmission" class="pro-input">
+          </div>
+<div class="col-6"><label class="pro-label">Aadhar No</label><input type="text" formControlName="aadharNumber" class="pro-input" placeholder="Enter Aadhar..."></div>
+          <div class="col-6"><label class="pro-label">PEN No</label><input type="text" formControlName="penNumber" class="pro-input" placeholder="Enter PEN..."></div>
+          <div class="field-group-label col-12">
+            <span class="material-icons-round" style="font-size:12px;">school</span>
+            Academic Details
+          </div>
+
+          <div class="col-6">
+            <label class="pro-label">Promoted to Class</label>
+            <div class="select-wrapper">
+              <select formControlName="promotedToClass" class="pro-input">
+                <option value="" disabled selected>Select class...</option>
+                <option *ngFor="let cls of promotedClassOptions" [value]="cls">{{ cls }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <label class="pro-label">Dues Paid Upto Month</label>
+            <input type="text" formControlName="duesPaidMonth" class="pro-input" placeholder="e.g. March 2026">
+          </div>
+
+          <div class="col-3">
+            <label class="pro-label">Working Days</label>
+            <input type="number" formControlName="workingDays" class="pro-input" placeholder="240">
+          </div>
+
+          <div class="col-3">
+            <label class="pro-label">Days Present</label>
+            <input type="number" formControlName="daysPresent" class="pro-input" placeholder="220">
+          </div>
+
+          <div class="col-6">
+            <label class="pro-label">General Conduct</label>
+            <div class="select-wrapper">
+              <select formControlName="conduct" class="pro-input">
+                <option value="Excellent">Excellent</option>
+                <option value="Good">Good</option>
+                <option value="Satisfactory">Satisfactory</option>
+                <option value="Poor">Poor</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field-group-label col-12">
+            <span class="material-icons-round" style="font-size:12px;">logout</span>
+            Leaving Information & Dates
+          </div>
+
+          <div class="col-12">
+            <label class="pro-label">Reason for Leaving</label>
+            <div class="select-wrapper">
+              <select formControlName="reasonForLeaving" class="pro-input">
+                <option value="" disabled selected>Select reason...</option>
+                <option *ngFor="let reason of leavingReasons" [value]="reason">{{ reason }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="col-4">
+            <label class="pro-label">Date of Application</label>
+            <input type="date" formControlName="dateOfApplication" class="pro-input">
+          </div>
+
+          <div class="col-4">
+            <label class="pro-label">Date Struck Off</label>
+            <input type="date" formControlName="dateStruckOff" class="pro-input">
+          </div>
+
+          <div class="col-4">
+            <label class="pro-label">Date of Issue</label>
+            <input type="date" formControlName="issueDate" class="pro-input">
+          </div>
+
+          <div class="col-12">
+            <label class="pro-label">Remarks</label>
+            <input type="text" formControlName="remarks" class="pro-input" placeholder="Any additional remarks…">
+          </div>
+
+        </div>
+
+        <div class="form-actions mt-3 pt-3 border-top">
+          <button type="button" class="btn pro-btn-outline" (click)="initTcForm()">
+            <span class="material-icons-round" style="font-size:15px;">refresh</span>
+            Clear
+          </button>
+          <button type="submit" class="btn pro-btn-primary" [disabled]="isSaving">
+            <span class="spinner-border spinner-border-sm" style="width:14px;height:14px;border-width:2px;" *ngIf="isSaving"></span>
+            <span class="material-icons-round" style="font-size:15px;" *ngIf="!isSaving">print</span>
+            {{ isSaving ? 'Saving…' : 'Generate TC' }}
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<div  class="certificate-wrapper " *ngIf="showPreview">
+  
+  <div class="action-bar no-print">
+    <button class="btn pro-btn-outline" (click)="editForm()">
+      <span class="material-icons-round">edit</span> Edit Details
+    </button>
+    <button class="btn pro-btn-primary" (click)="printDocument()">
+      <span class="material-icons-round">print</span> Print Certificate
+    </button>
+  </div>
+
+  <div  id="printable-certificate" class="a4-document official-tc">
+    <div class="tc-official-header">
+      
+      <div class="header-grid">
+        <div class="header-logo-left">
+          <img [src]="schoolLogo" alt="School Logo" class="official-logo" *ngIf="schoolLogo">
+          <div class="logo-placeholder" *ngIf="!schoolLogo"></div>
+        </div>
+        
+        <div class="header-center-content">
+          <h1 class="school-name">S.B. PUBLIC SCHOOL</h1>
+          <p class="school-subtitle">(Affiliated to Central Board of Secondary Education)</p>
+          <p class="school-address">Bhawanipur, Jairampur, Jaunpur (U.P.)</p>
+          
+          <div class="school-meta-line">
+            <!-- <span><strong>Affiliation No:</strong> _______</span>
+            <span><strong>School Code:</strong> _______</span>
+             -->
+      <!-- <span><strong>Book No :</strong> 3</span> -->
+   
+  
+            <span><strong>Ph:</strong> 9648796060, 9140217658</span>
+          </div>
+        </div>
+        
+        <div class="header-logo-right"></div>
+      </div>
+
+      <div class="header-divider"></div>
+      <div class="tc-id-bar">
+      <span><strong>Aadhar No :</strong> {{ tcData?.aadharNumber || '_________________' }}</span>
+         <span><strong>Sl. No :</strong> {{ studentData?.srNumber || '___' }}</span>
+      <span><strong>Admission No :</strong> {{ studentData?.srNumber || '___' }}</span>
+   
+    
+      <span><strong>PEN No :</strong> {{ tcData?.penNumber || '_________________' }}</span>
+    </div>
+    </div>
+    
+    <div class="tc-title-bar">
+      <h2>TRANSFER CERTIFICATE</h2>
+    </div>
+
+    <div class="tc-body-grid">
+      
+      <div class="t-row">
+        <div class="t-num">1.</div>
+        <div class="t-lbl">Name of the Student</div>
+        <div class="t-col">:</div>
+        <div class="t-val bold">{{ studentData?.name | uppercase }}</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">2.</div>
+        <div class="t-lbl">Mother's Name</div>
+        <div class="t-col">:</div>
+        <div class="t-val">{{ studentData?.mothersName  || '________________' }}</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">3.</div>
+        <div class="t-lbl">Father's / Guardian's Name</div>
+        <div class="t-col">:</div>
+        <div class="t-val">{{ studentData?.fathersName  || '________________' }}</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">4.</div>
+        <div class="t-lbl flex-between">
+          <span>Date of Birth (in Christian Era) according to</span>
+          <span class="sub-text">( in figures )</span>
+        </div>
+        <div class="t-col">:</div>
+        <div class="t-val">{{ studentData?.dob | date:'dd-MM-yyyy' }}</div>
+      </div>
+      
+      <div class="t-row multi-line">
+        <div class="t-num"></div>
+        <div class="t-lbl flex-between">
+          <span>Admission & Withdrawal Register.</span>
+          <span class="sub-text">( in words )</span>
+        </div>
+        <div class="t-col">:</div>
+        <div class="t-val" style="font-weight: bold;">{{ dobInWords }}</div>
+      </div>
+
+      <div class="t-row">
+        <div class="t-num">5.</div>
+        <div class="t-lbl">Proof for Date of Birth submitted at the time of admission</div>
+        <div class="t-col">:</div>
+        <div class="t-val">-</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">6.</div>
+        <div class="t-lbl">Nationality</div>
+        <div class="t-col">:</div>
+        <div class="t-val">{{ tcData?.nationality }}</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">7.</div>
+        <div class="t-lbl">Whether candidate belongs to SC/ST/OBC</div>
+        <div class="t-col">:</div>
+        <div class="t-val">{{ tcData?.category }}</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">8.</div>
+        <div class="t-lbl">Date of first admission in the School with class</div>
+        <div class="t-col">:</div>
+        <div class="t-val">{{ tcData?.dateOfAdmission | date:'dd-MM-yyyy' }}</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">9.</div>
+        <div class="t-lbl">Class in which the pupil last studied</div>
+        <div class="t-col">:</div>
+        <div class="t-val">{{ selectedStandard }}</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">10.</div>
+        <div class="t-lbl">School/Board Annual Examination last taken with result</div>
+        <div class="t-col">:</div>
+        <div class="t-val">Pass</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">11.</div>
+        <div class="t-lbl">Whether failed, if so once/twice in the same class</div>
+        <div class="t-col">:</div>
+        <div class="t-val">Never</div>
+      </div>
+      
+      <div class="t-row multi-line">
+        <div class="t-num">12.</div>
+        <div class="t-lbl">Subject Studied</div>
+        <div class="t-col">:</div>
+        <div class="t-val" style="text-transform: uppercase;">{{ subjectsList }}</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">13.</div>
+        <div class="t-lbl">Whether qualified for promotion to the higher class</div>
+        <div class="t-col">:</div>
+        <div class="t-val">{{ tcData?.promotedToClass }}</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">14.</div>
+        <div class="t-lbl">Total No. of working days in the academic session</div>
+        <div class="t-col">:</div>
+        <div class="t-val">{{ tcData?.workingDays }}</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">15.</div>
+        <div class="t-lbl">Total No. of presence in the academic session</div>
+        <div class="t-col">:</div>
+        <div class="t-val">{{ tcData?.daysPresent }}</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">16.</div>
+        <div class="t-lbl">Month upto which the people has paid school dues</div>
+        <div class="t-col">:</div>
+        <div class="t-val">{{ tcData?.duesPaidMonth }}</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">17.</div>
+        <div class="t-lbl">Any fee concession availed of, if so, the nature of such</div>
+        <div class="t-col">:</div>
+        <div class="t-val">No</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">18.</div>
+        <div class="t-lbl">Whether NCC Cadet/Boy Scout/Girl Guide (details may be given)</div>
+        <div class="t-col">:</div>
+        <div class="t-val">____________________</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">19.</div>
+        <div class="t-lbl">Whether school is under Govt./Minority/Independent Category</div>
+        <div class="t-col">:</div>
+        <div class="t-val">Independent</div>
+      </div>
+      
+      <div class="t-row multi-line">
+        <div class="t-num">20.</div>
+        <div class="t-lbl">Games played on extra curricular activities in which the pupil usually took part (mention achievement level therein)</div>
+        <div class="t-col">:</div>
+        <div class="t-val">{{ tcData?.conduct }}</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">21.</div>
+        <div class="t-lbl">Date of application for certificate</div>
+        <div class="t-col">:</div>
+        <div class="t-val">{{ tcData?.dateOfApplication | date:'dd-MM-yyyy' }}</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">22.</div>
+        <div class="t-lbl">Date on which pupils name was struck off the rolls of the school</div>
+        <div class="t-col">:</div>
+        <div class="t-val">{{ tcData?.dateStruckOff | date:'dd-MM-yyyy' }}</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">23.</div>
+        <div class="t-lbl">Date of issue of certificate</div>
+        <div class="t-col">:</div>
+        <div class="t-val">{{ tcData?.issueDate | date:'dd-MM-yyyy' }}</div>
+      </div>
+      
+      <div class="t-row">
+        <div class="t-num">24.</div>
+        <div class="t-lbl">Any other remarks</div>
+        <div class="t-col">:</div>
+        <div class="t-val">{{ tcData?.remarks || 'N/A' }} (Reason: {{ tcData?.reasonForLeaving }})</div>
+      </div>
+    </div>
+
+    <div class="tc-footer">
+      <p class="declaration">
+        <strong>I hereby declare that the above information including Name of the Candidate, Father's Name, Mother's Name and Date of Birth furnished above is correct as per school records</strong>
+      </p>
+
+      <div class="signature-row">
+        <div class="date-box">
+          <strong>DATE : {{ tcData?.issueDate | date:'dd-MM-yyyy' }}</strong>
+        </div>
+        <div class="sig-box">
+          Signature of the Principal _____________________
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</div>

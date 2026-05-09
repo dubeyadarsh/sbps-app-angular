@@ -1,0 +1,697 @@
+/* ==========================================================================
+   COMPONENT ROOT STYLES
+   (Relies on global variables from styles.css)
+   ========================================================================== */
+.tc-workspace {
+  /* Using global background to ensure consistency */
+  background-color: var(--bg-color);
+  min-height: 100vh;
+  padding: 24px;
+}
+
+/* ==========================================================================
+   1. TOP CONTROL BAR & MAIN CARD
+   (Fix: Separating the card from the background)
+   ========================================================================== */
+.top-control-bar {
+  background-color: var(--card-bg); /* Pure white to pop against --bg-color */
+  padding: 16px 24px;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+}
+
+.pro-card {
+  background-color: var(--card-bg); /* Pure white */
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md); /* Stronger shadow for depth */
+  overflow: hidden;
+}
+
+.pro-card-body {
+  padding: 28px 32px;
+}
+
+.toolbar-flex {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: nowrap;
+}
+
+.class-select { flex: 0 0 160px; }
+.student-select { flex: 1; min-width: 0; }
+
+/* ==========================================================================
+   2. TYPOGRAPHY & ICONS
+   ========================================================================== */
+.material-icons-round {
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pro-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pro-label .material-icons-round {
+  color: var(--primary-color); /* Pop of theme color on form icons */
+  opacity: 0.8;
+}
+
+/* ==========================================================================
+   3. FORM INPUTS (Crisp & Distinct)
+   ========================================================================== */
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.select-wrapper::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--text-muted);
+  pointer-events: none;
+}
+
+.pro-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  font-size: 0.875rem;
+  color: var(--text-main);
+  background-color: #f8fafc; /* Very subtle off-white to contrast with pure white card */
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  appearance: none;
+  transition: all 0.2s ease;
+}
+
+.pro-input::placeholder {
+  color: #94a3b8;
+}
+
+.pro-input:hover:not(:disabled) {
+  border-color: #cbd5e1;
+}
+
+.pro-input:focus {
+  outline: none;
+  background-color: var(--card-bg); /* Turns pure white on focus */
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.pro-input:disabled {
+  background-color: var(--bg-color);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* Validation styling */
+.pro-input.ng-invalid.ng-touched {
+  border-color: var(--danger-color);
+  background-color: var(--danger-bg);
+}
+
+/* ==========================================================================
+   4. STUDENT BANNER & AVATAR (The Fix)
+   ========================================================================== */
+.compact-summary-banner {
+  background: linear-gradient(to right, #f8fafc, var(--card-bg));
+  border-bottom: 1px solid var(--border-color);
+  padding: 20px 32px;
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Vibrant, theme-driven avatar */
+.summary-avatar-small {
+  width: 56px;
+  height: 56px;
+  background-color: var(--primary-color); 
+  color: #ffffff;
+  border-radius: 14px; /* Squircle shape looks very premium */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px var(--primary-shadow); /* Theme-colored glow */
+  border: 2px solid var(--card-bg); /* Separation from background */
+}
+
+.banner-text {
+  flex: 1;
+}
+
+.student-name-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0 0 6px 0;
+  letter-spacing: -0.3px;
+}
+
+.summary-meta-small {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.meta-pill .material-icons-round {
+  color: var(--primary-color);
+  font-size: 15px;
+}
+
+.meta-pill strong {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.meta-sep {
+  color: var(--border-color);
+}
+
+.saved-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--success-color);
+  background: var(--success-bg);
+  padding: 8px 14px;
+  border-radius: 20px;
+}
+
+/* ==========================================================================
+   5. SECTION HEADERS & GRID
+   ========================================================================== */
+.section-header {
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.section-icon {
+  color: var(--primary-color);
+  font-size: 20px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px 20px;
+}
+
+.col-3  { grid-column: span 3; }
+.col-4  { grid-column: span 4; }
+.col-6  { grid-column: span 6; }
+.col-8  { grid-column: span 8; }
+.col-12 { grid-column: span 12; }
+
+@media (max-width: 768px) {
+  .col-3, .col-4, .col-6 { grid-column: span 12; }
+}
+
+.field-group-label {
+  grid-column: span 12;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin: 16px 0 0 0;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ==========================================================================
+   6. ACTION BUTTONS (The Fix)
+   ========================================================================== */
+.form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-color);
+}
+
+.btn {
+  height: 44px;
+  padding: 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: var(--border-radius-md);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+/* Vibrant Primary Button using global theme */
+.pro-btn-primary {
+  background-color: var(--primary-color);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 12px var(--primary-shadow);
+}
+
+.pro-btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px var(--primary-shadow);
+}
+
+.pro-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.pro-btn-primary:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.pro-btn-outline {
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+}
+
+.pro-btn-outline:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+/* ==========================================================================
+   7. UTILITIES
+   ========================================================================== */
+.loading-state {
+  padding: 80px 0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.loading-state p {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin: 0;
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* ==========================================================================
+   OFFICIAL TRANSFER CERTIFICATE STYLES (Matches Image exactly)
+   ========================================================================== */
+.official-tc {
+  font-family: 'Times New Roman', Times, serif;
+  color: #000;
+  line-height: 1.4;
+  padding: 40px;
+  background: white;
+  width: 210mm;
+  min-height: 297mm;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Header Box with borders */
+.tc-header-box {
+  border: 1px solid #000;
+  margin-bottom: 15px;
+}
+
+.tc-header-content {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+}
+
+.tc-logo {
+  width: 80px;
+  display: flex;
+  justify-content: center;
+}
+
+.logo-placeholder {
+  width: 60px;
+  height: 70px;
+  border: 1px solid #000; /* Replace with actual <img> tag later */
+}
+
+.tc-school-info {
+  flex: 1;
+  text-align: center;
+}
+
+.tc-school-info h1 {
+  font-size: 26px;
+  margin: 0 0 5px 0;
+  letter-spacing: 1px;
+}
+
+.tc-school-info p {
+  margin: 2px 0;
+  font-size: 14px;
+}
+
+.tc-school-info .pattern { font-weight: bold; }
+.tc-school-info .contact { font-weight: bold; font-size: 13px; }
+
+/* Sub-bars inside header */
+.tc-title-bar {
+  border-top: 1px solid #000;
+  border-bottom: 1px solid #000;
+  text-align: center;
+  padding: 6px 0;
+  background-color: #f8f8f8; /* Slight tint to match image contrast */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.tc-title-bar h2 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: 1px;
+}
+
+.tc-meta-bar, .tc-id-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 15px;
+  font-size: 14px;
+}
+
+.tc-id-bar {
+  border-top: 1px solid #000;
+}
+
+/* 24-Point Grid System */
+.tc-body-grid {
+  padding: 10px 5px;
+  font-size: 14.5px;
+}
+
+.t-row {
+  display: grid;
+  grid-template-columns: 25px 380px 15px 1fr;
+  margin-bottom: 8px;
+  align-items: start;
+}
+
+.multi-line { margin-bottom: 12px; }
+
+.t-num { text-align: right; padding-right: 5px; }
+.t-lbl { padding-right: 10px; }
+.t-col { text-align: center; }
+.t-val { font-weight: 500; }
+.t-val.bold { font-weight: bold; font-size: 15px; }
+
+.sub-row {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  margin-bottom: 4px;
+}
+
+/* Footer Section */
+.tc-footer {
+  margin-top: 30px;
+  padding: 0 10px;
+}
+
+.declaration {
+  text-align: center;
+  font-style: italic;
+  font-size: 13px;
+  margin-bottom: 50px;
+  padding: 0 20px;
+}
+
+.signature-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.date-box { font-size: 15px; }
+.sig-box { font-size: 15px; font-weight: bold; }
+
+/* ==========================================================================
+   GLOBAL PRINT OVERRIDES (Forces Perfect A4 & Hides Shell)
+   ========================================================================== */
+@media print {
+  /* Force exact A4 size and strip browser default margins */
+  @page { 
+    size: A4 portrait; 
+    margin: 0mm; 
+  }
+  
+  body, html { 
+    background: white !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* 1. AGGRESSIVELY HIDE ALL GLOBAL WRAPPERS & MENUS */
+  app-header, app-sidebar, .sidebar, .navbar, .top-header, 
+  .hamburger, nav, aside, header, footer, 
+  .action-bar, .top-control-bar, .no-print { 
+    display: none !important; 
+  }
+
+  /* 2. FORCE ROOT CONTAINERS TO THE TOP-LEFT CORNER */
+  app-root, main, .app-main-container, .main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: visible !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    background: white !important;
+  }
+
+  /* 3. EXPAND THE CERTIFICATE TO FILL THE VOID */
+  app-tc-generator, .tc-workspace, .certificate-wrapper {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    background: white !important;
+  }
+
+  /* 4. EXACT A4 DIMENSIONS */
+  .a4-document {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 15mm !important; /* Internal breathing room so text doesn't touch the paper edge */
+    width: 210mm !important;
+    height: 297mm !important; /* Exact A4 Height */
+    box-sizing: border-box !important;
+    page-break-after: avoid !important;
+    page-break-before: avoid !important;
+    page-break-inside: avoid !important;
+  }
+}
+/* FIX #3: Strict alignment for DOB grid */
+.sub-row {
+  display: grid;
+  grid-template-columns: 85px 15px 1fr;
+  margin-bottom: 4px;
+  align-items: start;
+}
+
+.sub-lbl {
+  text-align: left;
+}
+
+.sub-col {
+  text-align: center;
+}
+/* Fix for perfectly aligning DOB sub-labels */
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.sub-text {
+  padding-left: 15px;
+  white-space: nowrap;
+}
+/* Replace .logo-placeholder with this: */
+.print-logo {
+  width: 75px; /* Adjust this width based on whether your logo is square or wide */
+  height: auto;
+  max-height: 85px;
+  object-fit: contain;
+}
+/* ==========================================================================
+   PROFESSIONAL CERTIFICATE HEADER
+   ========================================================================== */
+.tc-official-header {
+  margin-bottom: 15px;
+}
+
+/* 3-Column Grid guarantees the center text stays perfectly centered 
+   regardless of the logo size */
+.header-grid {
+  display: grid;
+  grid-template-columns: 120px 1fr 120px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.header-logo-left, .header-logo-right {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.official-logo {
+  width: 90px;
+  height: auto;
+  object-fit: contain;
+}
+
+.header-center-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* Authoritative Serif font for the institution name */
+.school-name {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #000;
+  margin: 0 0 4px 0;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.school-subtitle {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.school-address {
+  font-size: 14px;
+  font-style: italic;
+  margin: 0 0 6px 0;
+}
+
+.school-meta-line {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+/* The signature double-line divider for official legal/school documents */
+.header-divider {
+  border-top: 3px solid #000;
+  border-bottom: 1px solid #000;
+  height: 3px; /* Creates the gap between the two lines */
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ==========================================================================
+   TITLE BAR REFINEMENT
+   ========================================================================== */
+.tc-title-bar {
+  margin: 20px 0;
+  text-align: center;
+  border: none; /* Removing the old messy border */
+  background: transparent;
+}
+
+.tc-title-bar h2 {
+  display: inline-block;
+  margin: 0;
+  font-size: 18px;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+  border: 1.5px solid #000;
+  padding: 6px 30px;
+  border-radius: 4px;
+  background-color: #f8f8f8;
+  /* Forces the printer to print the light gray background */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact; 
+}

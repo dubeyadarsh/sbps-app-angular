@@ -32,7 +32,26 @@
         <span class="material-icons-round">payments</span> 
         <span class="nav-text">Fee Management</span>
       </a>
+       <div class="nav-group">
+        <div class="nav-item parent-item" 
+             style="cursor: pointer;" 
+             (click)="toggleDocGenMenu()"
+             [class.active]="isDocGenExpanded">
+          <span class="material-icons-round">folder_shared</span> 
+          <span class="nav-text" style="flex: 1;">Doc Gen</span>
+          <span class="material-icons-round chevron nav-text" 
+                [style.transform]="isDocGenExpanded ? 'rotate(180deg)' : 'rotate(0)'">
+            expand_more
+          </span>
+        </div>
         
+        <div class="submenu" [class.open]="isDocGenExpanded && isSidebarOpen">
+          <a routerLink="/tc-generator" routerLinkActive="active" class="nav-item sub-item" (click)="closeMobileSidebar()">
+            <span class="material-icons-round">article</span> 
+            <span class="nav-text">TC Generator</span>
+          </a>
+        </div>
+      </div>
       <div class="nav-group">
         <div class="nav-item parent-item" 
              style="cursor: pointer;" 

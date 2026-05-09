@@ -290,4 +290,27 @@ public getRosterByStandards(standards: string[]) {
   const params = { standards: standards.join(',') }; 
   return this.http.get(`${baseApiUrl}api/students/roster`, { params });
 }
+// ================================================
+  // STUDENT (SINGLE FETCH)
+  // ================================================
+  // Required to fetch specific student details for the TC
+  getStudentById(studentId: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}api/students/${studentId}`);
+  }
+
+  // ================================================
+  // TRANSFER CERTIFICATE (TC)
+  // ================================================
+  getTcByStudentId(studentId: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}api/tc/${studentId}`);
+  }
+
+  saveTcData(payload: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}api/tc`, payload);
+  }
+  // Add this inside your ApiService class
+  getSubjectsByClass(standard: string) {
+    // Make sure 'baseApiUrl' matches the import from your constant.ts file
+    return this.http.get<any>(`${baseApiUrl}api/marksheet/subjects/class/${standard}`);
+  }
 }

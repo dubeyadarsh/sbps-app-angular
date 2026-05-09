@@ -62,4 +62,15 @@ isConfigExpanded: boolean = false;
   logout(): void {
     this.authService.logout();
   }
+  // Add this property with your other boolean flags
+  isDocGenExpanded: boolean = false;
+
+  // Add this method with your other toggle methods
+  toggleDocGenMenu() {
+    this.isDocGenExpanded = !this.isDocGenExpanded;
+    
+    // Optional: If you want to close other menus when this one opens, you can add:
+    this.isMarksheetExpanded = false;
+    this.isConfigExpanded = false;
+  }
 }

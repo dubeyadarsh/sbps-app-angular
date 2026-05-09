@@ -136,34 +136,32 @@ export class DashboardComponent implements OnInit {
   // 4. DATA FETCHING METHODS
   // =========================================
   
-  loadDashboardData(): void {
+loadDashboardData(): void {
     this.apiService.getDashboardSummary().subscribe({
       next: (data) => {
-        // 1. Populate the 4 Top Stat Cards
+        // SAFE FALLBACKS: Added ( ... || 0 ) to prevent null crashes
         this.statCards = [
-          { title: 'Total Enrolled Students', value: data.totalStudents, icon: 'people', iconBgColor: '#eff6ff', iconColor: '#3b82f6' },
-          { title: "Today's Collection", value: `₹${data.todayCollection.toLocaleString()}`, icon: 'payments', iconBgColor: '#fffbeb', iconColor: '#f59e0b' },
-          { title: "This Month's Collection", value: `₹${data.currentMonthCollection.toLocaleString()}`, icon: 'account_balance_wallet', iconBgColor: '#ecfdf5', iconColor: '#10b981' },
-          { title: "Total Outstanding Dues", value: `₹${data.totalPendingFees.toLocaleString()}`, icon: 'warning_amber', iconBgColor: '#fef2f2', iconColor: '#ef4444' }
+          { title: 'Total Enrolled Students', value: data.totalStudents || 0, icon: 'people', iconBgColor: '#eff6ff', iconColor: '#3b82f6' },
+          { title: "Today's Collection", value: `₹${(data.todayCollection || 0).toLocaleString()}`, icon: 'payments', iconBgColor: '#fffbeb', iconColor: '#f59e0b' },
+          { title: "This Month's Collection", value: `₹${(data.currentMonthCollection || 0).toLocaleString()}`, icon: 'account_balance_wallet', iconBgColor: '#ecfdf5', iconColor: '#10b981' },
+          { title: "Total Outstanding Dues", value: `₹${(data.totalPendingFees || 0).toLocaleString()}`, icon: 'warning_amber', iconBgColor: '#fef2f2', iconColor: '#ef4444' }
         ];
 
-        // 2. Populate Fee Collection Line Chart
-        this.lineChartData.labels = data.chartLabels;
-        this.lineChartData.datasets[0].data = data.chartData;
+        // Safely populate charts (fallback to empty arrays if null)
+        this.lineChartData.labels = data.chartLabels || [];
+        this.lineChartData.datasets[0].data = data.chartData || [];
 
-        // 3. Populate Student Distribution Bar Chart
-        this.barChartData.labels = data.studentChartLabels;
-        this.barChartData.datasets[0].data = data.studentChartData;
+        this.barChartData.labels = data.studentChartLabels || [];
+        this.barChartData.datasets[0].data = data.studentChartData || [];
         
-        // 4. Force Angular to re-render both charts
+        // Force Angular to re-render both charts
         this.charts?.forEach(chart => chart.update());
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error("Failed to load dashboard data", err);
         this.notify.showError("Failed to load dashboard statistics.");
-                this.cdr.detectChanges();
-
+        this.cdr.detectChanges();
       }
     });
   }

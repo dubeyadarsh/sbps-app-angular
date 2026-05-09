@@ -11,6 +11,7 @@ import { MarksEntryComponent } from './pages/marks-entry/marks-entry';
 import { MarksheetViewComponent } from './pages/marksheet-view/marksheet-view';
 import { authGuard } from './auth.guard';
 import { LoginComponent } from './pages/login/login';
+import { TcGeneratorComponent } from './pages/tc-generate/tc-generate';
 
 export const routes: Routes = [
   // 1. PUBLIC ROUTE (No Layout wrapper, full screen)
@@ -34,7 +35,12 @@ export const routes: Routes = [
 
       // Highly Protected Routes (Admin Only)
       { path: 'fee-config', component: FeeConfigComponent, data: { role: 'ADMIN' } },
-      { path: 'marksheet-config', component: MarksheetConfigComponent, data: { role: 'ADMIN' } }
+      { path: 'marksheet-config', component: MarksheetConfigComponent, data: { role: 'ADMIN' } },
+      { 
+    path: 'tc-generator', 
+    component: TcGeneratorComponent,
+    title: 'TC Generator - SBPS' // Optional: sets the browser tab title
+  },
     ]
   },
   
