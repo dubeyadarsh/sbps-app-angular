@@ -267,14 +267,14 @@ printDocument() {
             }
             
             /* Header */
-            .tc-official-header { margin-bottom: 15px; } 
-            .header-grid { display: grid; grid-template-columns: 110px 1fr 110px; align-items: center; margin-bottom: 10px; }
+            .tc-official-header { margin-bottom: 10px; } 
+            .header-grid { display: grid; grid-template-columns: 110px 1fr 110px; align-items: center; margin-bottom: 9px; }
             .header-logo-left, .header-logo-right { display: flex; justify-content: center; align-items: center; }
             .official-logo { width: 95px; height: auto; object-fit: contain; }
             .header-center-content { display: flex; flex-direction: column; align-items: center; text-align: center; }
             .school-name { font-size: 32px; font-weight: 700; margin: 0 0 4px 0; letter-spacing: 1px; text-transform: uppercase; }
             .school-subtitle { font-size: 13px; font-weight: 700; margin: 0 0 3px 0; text-transform: uppercase; letter-spacing: 0.5px; }
-            .school-address { font-size: 15px; font-style: italic; margin: 0 0 6px 0; }
+            .school-address { font-size: 13px; font-style: italic; margin: 0 0 6px 0; }
             .school-meta-line { display: flex; justify-content: center; gap: 24px; font-size: 13px; margin-top: 4px; }
             .header-divider { border-top: 3px solid #000; border-bottom: 1px solid #000; height: 2px; margin: 0 auto; width: 100%; }
 
@@ -287,24 +287,24 @@ printDocument() {
             .tc-id-bar { border-top: 1px solid #000; margin-bottom: 10px; }
 
             /* 24-Point Body Grid */
-            .tc-body-grid { padding: 10px 5px; font-size: 13px; } 
+            .tc-body-grid { padding: 10px 5px; font-size: 12px; } 
             .t-row { display: grid; grid-template-columns: 25px 380px 15px 1fr; margin-bottom: 11px; align-items: start; } 
             .multi-line { margin-bottom: 10px; }
             .t-num { text-align: right; padding-right: 5px; }
             .t-lbl { padding-right: 10px; }
             .t-col { text-align: center; }
             .t-val { font-weight: 500; }
-            .t-val.bold { font-weight: bold; font-size: 16px; }
+            .t-val.bold { font-weight: bold; font-size: 14px; }
             
             .flex-between { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; }
             .sub-text { padding-left: 15px; white-space: nowrap; }
 
             /* Footer */
-            .tc-footer { margin-top: 35px; padding: 0 10px; } 
-            .declaration { text-align: center; font-style: italic; font-size: 13.5px; margin-bottom: 35px; padding: 0 20px; } 
+            .tc-footer { margin-top: 25px; padding: 0 10px; } 
+            .declaration { text-align: center; font-style: italic; font-size: 12.5px; margin-bottom: 25px; padding: 0 20px; } 
             .signature-row { display: flex; justify-content: space-between; align-items: flex-end; }
-            .date-box { font-size: 13px; }
-            .sig-box { font-size: 13px; font-weight: bold; }
+            .date-box { font-size: 12px; }
+            .sig-box { font-size: 12px; font-weight: bold; }
           </style>
         </head>
         <body>
