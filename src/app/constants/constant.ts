@@ -1,5 +1,5 @@
-//  export const baseApiUrl = "https://sbps-app-backend.onrender.com/";
- export const baseApiUrl = "http://localhost:8080/";
+ export const baseApiUrl = "https://sbps-app-backend.onrender.com/";
+//  export const baseApiUrl = "http://localhost:8080/";
 
  export const STANDARDS: any[] = [
   { label: 'Grade PG', value: 'PG' },
