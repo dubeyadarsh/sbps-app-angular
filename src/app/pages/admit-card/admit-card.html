@@ -1,0 +1,161 @@
+<div class="tc-workspace no-print">
+
+  <div class="top-control-bar">
+    <div style="display:flex; align-items:flex-end; gap:15px; flex-wrap:wrap;">
+      
+      <div style="flex: 1; min-width:200px;">
+        <label class="pro-label"><span class="material-icons-round">assignment</span> Select Exam</label>
+        <div class="select-wrapper">
+          <select class="pro-input" [(ngModel)]="selectedExamId" (ngModelChange)="onExamChange()">
+            <option value="null" disabled>Choose Examination...</option>
+            <option *ngFor="let exam of examsList" [value]="exam.id">{{ exam.name }} ({{ exam.academicYear }})</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="flex: 0 0 150px;">
+        <label class="pro-label"><span class="material-icons-round">school</span> Class</label>
+        <div class="select-wrapper">
+          <select class="pro-input" [(ngModel)]="selectedStandard" (ngModelChange)="onSelectionChange()" [disabled]="!selectedExamId">
+            <option value="" disabled>Choose Class...</option>
+            <option *ngFor="let std of standards" [value]="std">Class {{ std }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="flex: 0 0 auto;" *ngIf="hasSavedSchedule">
+        <button class="btn pro-btn-primary" (click)="printAdmitCards()" style="background-color: #059669; border-color: #047857;">
+          <span class="material-icons-round">print</span>
+          Generate {{ studentsList.length }} Admit Cards
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="spinner-border text-primary" style="width:2rem;height:2rem;border-width:3px;"></div>
+    <p>Loading examination data…</p>
+  </div>
+
+  <div class="pro-card fade-in" *ngIf="!isLoading && selectedExamId && selectedStandard">
+    
+    <div class="pro-card-body">
+      
+      <div class="section-header" style="justify-content: space-between; display: flex;">
+        <h6 class="section-title"><span class="material-icons-round section-icon">calendar_month</span> Exam Timetable Configuration</h6>
+        <span class="badge" [ngClass]="hasSavedSchedule ? 'bg-success' : 'bg-warning text-dark'">
+          {{ hasSavedSchedule ? 'Schedule Saved & Ready' : 'Draft Mode' }}
+        </span>
+      </div>
+
+      <div class="ai-panel" *ngIf="!hasSavedSchedule">
+        <div class="ai-header">
+          <span class="material-icons-round">auto_awesome</span>
+          <strong>Smart Auto-Scheduler</strong>
+        </div>
+        
+        <form [formGroup]="aiForm" (ngSubmit)="autoFillSchedule()" class="ai-grid">
+          <div>
+            <label class="pro-label">Start Date</label>
+            <input type="date" formControlName="startDate" class="pro-input">
+          </div>
+          <div>
+            <label class="pro-label">Shift Start</label>
+            <input type="time" formControlName="startTime" class="pro-input">
+          </div>
+          <div>
+            <label class="pro-label">Shift End</label>
+            <input type="time" formControlName="endTime" class="pro-input">
+          </div>
+          <div style="grid-column: span 2;">
+            <label class="pro-label">Dates to Skip (Holidays)</label>
+            <div class="holiday-picker-container">
+              
+              <input type="date" class="pro-input" (change)="addHoliday($event)" style="width: 150px;" title="Select a date to skip">
+              
+              <div class="holiday-chips">
+                <span class="holiday-chip" *ngFor="let date of selectedHolidays">
+                  {{ date | date:'dd MMM' }}
+                  <span class="material-icons-round" (click)="removeHoliday(date)">close</span>
+                </span>
+              </div>
+              
+            </div>
+          </div>
+          <div style="display: flex; align-items: flex-end;">
+            <button type="submit" class="btn ai-btn">
+              Auto-Fill Timetable
+            </button>
+          </div>
+        </form>
+
+        <hr style="border-top: 1px dashed #e9d5ff; margin: 20px 0;">
+        
+        <div style="display: flex; align-items: flex-end; gap: 15px;">
+          <div>
+            <label class="pro-label" style="color: #a21caf;">Or Copy From Existing Class</label>
+            <div class="select-wrapper">
+              <select class="pro-input" [(ngModel)]="copyFromStandard" [ngModelOptions]="{standalone: true}" style="border-color: #f5d0fe; background-color: #ffffff;">
+                <option value="" disabled>Select Class...</option>
+                <option *ngFor="let std of scheduledStandards" [value]="std" [disabled]="std === selectedStandard">
+                  Class {{ std }}
+                </option>
+              </select>
+            </div>
+          </div>
+          
+          <button type="button" class="btn" (click)="copySchedule()" style="background-color: #fdf4ff; color: #86198f; border: 1px solid #f0abfc; height: 42px;">
+            <span class="material-icons-round" style="font-size: 18px;">content_copy</span>
+            Copy Dates
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive mt-4">
+        <table class="table grid-table">
+          <thead>
+            <tr>
+              <th style="width: 20%;">Subject</th>
+              <th style="width: 15%;">Date</th>
+              <th style="width: 10%;">Start Time</th>
+              <th style="width: 10%;">End Time</th>
+              <th style="width: 45%;">Syllabus / Pattern (Prints on Card)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of scheduleData; let i = index">
+              <td><strong>{{ row.subjectName }}</strong></td>
+              <td><input type="date" class="pro-input grid-input" [(ngModel)]="row.examDate"></td>
+              <td><input type="time" class="pro-input grid-input" [(ngModel)]="row.startTime"></td>
+              <td><input type="time" class="pro-input grid-input" [(ngModel)]="row.endTime"></td>
+              
+              <td style="min-width: 320px;">
+                <div class="pattern-grid">
+                  <label class="pattern-checkbox" *ngFor="let pat of questionPatterns">
+                    <input type="checkbox" 
+                           [checked]="row.patterns?.includes(pat)" 
+                           (change)="togglePattern(row, pat)"> 
+                    {{ pat }}
+                  </label>
+                </div>
+                <input type="text" class="pro-input grid-input" 
+                       [(ngModel)]="row.syllabusText" 
+                       placeholder="Enter chapters (e.g., Lesson 6 to 12)...">
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="form-actions mt-3 pt-3 border-top">
+        <button class="btn pro-btn-primary" (click)="saveSchedule()">
+          <span class="material-icons-round">save</span>
+          {{ hasSavedSchedule ? 'Update Schedule' : 'Save Schedule to Database' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>

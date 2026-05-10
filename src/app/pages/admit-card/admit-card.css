@@ -1,0 +1,384 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ==========================================================================
+   GLOBAL COMPONENT RESET
+   ========================================================================== */
+.tc-workspace {
+  background-color: #f3f4f6; /* Soft gray background for the whole page */
+  min-height: 100vh;
+  padding: 30px;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #1f2937;
+  box-sizing: border-box;
+}
+
+.tc-workspace * {
+  box-sizing: border-box;
+}
+
+/* Fix for broken Material Icons (hides them if font fails to load) */
+.material-icons-round {
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  /* Prevent the raw text from breaking layout if font is missing */
+  font-size: 16px; 
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   TOP CONTROL BAR (Select Exam & Class)
+   ========================================================================== */
+.top-control-bar {
+  background: #ffffff;
+  padding: 20px 24px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  margin-bottom: 24px;
+}
+
+.top-control-bar > div {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+/* Form Elements */
+.pro-label {
+  display: block; /* Forces label above input */
+  font-size: 13px;
+  font-weight: 600;
+  color: #4b5563;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pro-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  color: #111827;
+  background-color: #f9fafb;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.pro-input:hover:not(:disabled) {
+  border-color: #9ca3af;
+}
+
+.pro-input:focus {
+  background-color: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+.pro-input:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+select.pro-input {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+/* ==========================================================================
+   BUTTONS
+   ========================================================================== */
+.btn {
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 0 20px;
+  border: none;
+  transition: all 0.2s;
+}
+
+.pro-btn-primary {
+  background-color: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.pro-btn-primary:hover:not(:disabled) {
+  background-color: #1d4ed8;
+  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
+}
+
+.pro-btn-outline {
+  background-color: #ffffff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.pro-btn-outline:hover:not(:disabled) {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* ==========================================================================
+   MAIN CARD & TIMETABLE SECTION
+   ========================================================================== */
+.pro-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.pro-card-body {
+  padding: 30px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #f3f4f6;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.bg-success { background-color: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+.bg-warning { background-color: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+
+/* ==========================================================================
+   AI ASSISTANT PANEL (Completely Rebuilt)
+   ========================================================================== */
+.ai-panel {
+  background: linear-gradient(145deg, #fdf4ff 0%, #ffffff 100%);
+  border: 1px solid #e879f9;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 6px -1px rgba(232, 121, 249, 0.1);
+}
+
+.ai-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #a21caf;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.ai-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  align-items: flex-end; /* Aligns inputs to the bottom so labels don't offset them */
+}
+
+/* AI specific input overrides to look integrated */
+.ai-panel .pro-input {
+  border-color: #f5d0fe;
+  background-color: #ffffff;
+}
+.ai-panel .pro-input:focus {
+  border-color: #d946ef;
+  box-shadow: 0 0 0 4px rgba(217, 70, 239, 0.15);
+}
+
+.ai-btn {
+  background: linear-gradient(to right, #c026d3, #9333ea);
+  color: white;
+  border: none;
+  width: 100%;
+}
+.ai-btn:hover:not(:disabled) {
+  background: linear-gradient(to right, #a21caf, #7e22ce);
+}
+
+/* ==========================================================================
+   EDITABLE DATA GRID (Table)
+   ========================================================================== */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.grid-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.grid-table th {
+  background-color: #f9fafb;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.grid-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+
+.grid-table tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Inputs strictly inside the table */
+.grid-table .grid-input {
+  height: 36px !important; 
+  border: 1px solid transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  padding: 0 8px;
+}
+
+.grid-table .grid-input:hover {
+  border-color: #d1d5db !important;
+  background-color: #ffffff !important;
+}
+
+.grid-table .grid-input:focus {
+  border-color: #3b82f6 !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 24px;
+}
+
+/* ==========================================================================
+   PRINT MEDIA QUERY
+   ========================================================================== */
+@media print {
+  .no-print, .tc-workspace {
+    display: none !important;
+  }
+}
+/* ==========================================================================
+   HOLIDAY PICKER CHIPS
+   ========================================================================== */
+.holiday-picker-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.holiday-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.holiday-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #fae8ff; /* Soft purple */
+  color: #86198f;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid #f0abfc;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.holiday-chip .material-icons-round {
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.holiday-chip .material-icons-round:hover {
+  opacity: 1;
+  color: #701a75;
+}
+/* ==========================================================================
+   MULTI-SELECT CHECKBOX GRID
+   ========================================================================== */
+.pattern-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Creates 2 clean columns */
+  gap: 8px;
+  margin-bottom: 8px;
+  background-color: #f8fafc;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.pattern-checkbox {
+  font-size: 11px;
+  font-weight: 500;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.pattern-checkbox input[type="checkbox"] {
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+  accent-color: #2563eb; /* Matches the primary blue theme */
+  margin: 0;
+}
+/* BOTTOM SIGNATURES - Added extra top margin for pen signatures */
+            .bottom-signatures { display: flex; justify-content: space-between; padding: 10px 40px 20px 40px; margin-top: 15px; }
+            .sig-line { border-top: 1.5px solid #000; padding-top: 6px; font-size: 14px; font-weight: bold; width: 200px; text-align: center; margin-top: 50px; }

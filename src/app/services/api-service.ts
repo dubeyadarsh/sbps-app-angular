@@ -313,4 +313,39 @@ public getRosterByStandards(standards: string[]) {
     // Make sure 'baseApiUrl' matches the import from your constant.ts file
     return this.http.get<any>(`${baseApiUrl}api/marksheet/subjects/class/${standard}`);
   }
+  // ==========================================
+  // EXAM & ADMIT CARD METHODS
+  // ==========================================
+
+  /**
+   * STEP 1: Ask Gemini to generate a draft timetable
+   * Connects to: POST /api/exams/generate-schedule
+   */
+  generateDraftSchedule(payload: any) {
+    return this.http.post(`${baseApiUrl}api/exams/generate-schedule`, payload);
+  }
+
+// Updated to include the standard in the URL
+  saveApprovedSchedule(examId: number, standard: string, schedules: any[]) {
+    return this.http.post(`${baseApiUrl}api/exams/${examId}/schedules/${standard}/bulk`, schedules);
+  }
+
+  /**
+   * STEP 3: Fetch the saved timetable for printing Admit Cards
+   * Connects to: GET /api/exams/{examId}/schedules/{standard}
+   */
+  getScheduleForAdmitCard(examId: number, standard: string) {
+    return this.http.get(`${baseApiUrl}api/exams/${examId}/schedules/${standard}`);
+  }
+  // Fetch all exams for the dropdown
+  getAllExams() {
+    return this.http.get(`${baseApiUrl}api/exams`);
+  }
+  // Fetch class-specific Admit Card Configuration
+  getAdmitCardConfig(standard: string) {
+    return this.http.get(`${baseApiUrl}api/exams/config/${standard}`);
+  }
+  getScheduledStandards(examId: number) {
+    return this.http.get(`${baseApiUrl}api/exams/${examId}/scheduled-standards`);
+  }
 }

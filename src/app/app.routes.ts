@@ -12,6 +12,7 @@ import { MarksheetViewComponent } from './pages/marksheet-view/marksheet-view';
 import { authGuard } from './auth.guard';
 import { LoginComponent } from './pages/login/login';
 import { TcGeneratorComponent } from './pages/tc-generate/tc-generate';
+import { AdmitCardHubComponent } from './pages/admit-card/admit-card';
 
 export const routes: Routes = [
   // 1. PUBLIC ROUTE (No Layout wrapper, full screen)
@@ -40,6 +41,11 @@ export const routes: Routes = [
     path: 'tc-generator', 
     component: TcGeneratorComponent,
     title: 'TC Generator - SBPS' // Optional: sets the browser tab title
+  },
+  { 
+    path: 'admit-card', 
+    component: AdmitCardHubComponent,
+    title: 'Admit Card - SBPS' // Optional: sets the browser tab title
   },
     ]
   },
